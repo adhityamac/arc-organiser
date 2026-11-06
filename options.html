@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal Board - Settings</title>
+  <style>
+    :root {
+      --bg-app: #0f0f11;
+      --bg-surface: #18181b;
+      --bg-card: #222226;
+      --border-subtle: #27272a;
+      --border-card-hover: #3f3f46;
+      --accent-primary: #3b82f6;
+      --accent-danger: #ef4444;
+      --text-primary: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      font-family: var(--font-stack);
+      line-height: 1.5;
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 680px;
+      width: 100%;
+    }
+    header {
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 16px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 24px 0 12px;
+      color: var(--accent-primary);
+    }
+    .section-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .setting-row:last-child {
+      border-bottom: none;
+    }
+    .setting-info {
+      flex: 1;
+      padding-right: 20px;
+    }
+    .setting-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .setting-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    select, input[type="number"] {
+      background: var(--bg-app);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    input[type="checkbox"] {
+      accent-color: var(--accent-primary);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .btn {
+      background: var(--accent-primary);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .privacy-notice {
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 14px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #86efac;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span>⚡</span> Minimal Board Settings</h1>
+    </header>
+
+    <h2>Capture & Behavior</h2>
+    <div class="section-card">
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Close Tab on Quick-Save</div>
+          <div class="setting-desc">Close the active tab immediately after pressing Alt+Shift+S (window remains open if it is the last tab).</div>
+        </div>
+        <input type="checkbox" id="closeTabOnQuickSave">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Open Links in New Tab</div>
+          <div class="setting-desc">Clicking a saved card opens in a new background tab instead of navigating the current tab.</div>
+        </div>
+        <input type="checkbox" id="openLinksInNewTab">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Duplicate Prevention Scope</div>
+          <div class="setting-desc">Check for existing URLs before saving a card.</div>
+        </div>
+        <select id="dedupeScope">
+          <option value="workspace">Active Workspace (Recommended)</option>
+          <option value="inbox">Inbox Column Only</option>
+          <option value="all">Across All Workspaces</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Strip Marketing Tracking Parameters</div>
+          <div class="setting-desc">Automatically removes utm_*, fbclid, gclid, and other ad trackers before saving URLs.</div>
+        </div>
+        <input type="checkbox" id="stripTrackingParams">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Extension Toolbar Icon Action</div>
+          <div class="setting-desc">What occurs when clicking the extension icon in the browser toolbar.</div>
+        </div>
+        <select id="toolbarClickAction">
+          <option value="save-tab">Save Active Tab</option>
+          <option value="save-window">Save Window Session</option>
+          <option value="open-board">Open Minimal Board</option>
+        </select>
+      </div>
+    </div>
+
+    <h2>Data & Retention</h2>
+    <div class="section-card">
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Trash Retention (Days)</div>
+          <div class="setting-desc">Deleted cards remain in trash before being permanently purged.</div>
+        </div>
+        <input type="number" id="trashRetentionDays" min="1" max="365" style="width: 70px;">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Stale Card Age (Days)</div>
+          <div class="setting-desc">Cards older than this without interaction will be flagged for Inbox review.</div>
+        </div>
+        <input type="number" id="staleAfterDays" min="1" max="180" style="width: 70px;">
+      </div>
+    </div>
+
+    <div class="privacy-notice">
+      <strong>🔒 Privacy by Construction:</strong> Minimal Board Tab is 100% local-first. All your bookmarks, workspaces, and notes remain on your machine inside browser storage. No servers, no tracking, and no external network calls.
+    </div>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

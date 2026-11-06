@@ -1,0 +1,70 @@
+{
+  "manifest_version": 3,
+  "name": "Minimal Board Tab",
+  "version": "0.2.0",
+  "description": "Keyboard-first visual bookmark & tab manager. Fast, calm, local-first.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Minimal Board Tab",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "tabs",
+    "favicon",
+    "contextMenus",
+    "alarms"
+  ],
+  "optional_permissions": [
+    "bookmarks",
+    "tabGroups",
+    "downloads",
+    "search",
+    "topSites"
+  ],
+  "commands": {
+    "quick-save": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Quick save active tab to Inbox"
+    },
+    "save-window": {
+      "suggested_key": {
+        "default": "Alt+Shift+A",
+        "mac": "Alt+Shift+A"
+      },
+      "description": "Save current window tabs as a session column"
+    },
+    "open-board": {
+      "suggested_key": {
+        "default": "Alt+Shift+B",
+        "mac": "Alt+Shift+B"
+      },
+      "description": "Open Minimal Board Tab"
+    }
+  }
+}
