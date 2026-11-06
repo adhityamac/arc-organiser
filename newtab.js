@@ -20,6 +20,8 @@ import {
   openMoveModal,
 } from './lib/ui/modal.js';
 import { renderMarkdownLite } from './lib/ui/markdown.js';
+import { openCommandPalette } from './lib/ui/palette.js';
+import { toggleTabDrawer } from './lib/ui/drawer.js';
 
 performance.mark('mbt_init_start');
 
@@ -34,6 +36,29 @@ const workspaceSwitcher = document.getElementById('workspace-switcher');
 const toastContainer = document.getElementById('toast-container');
 const settingsBtn = document.getElementById('settings-btn');
 const addColumnBtn = document.getElementById('add-column-btn');
+const searchTriggerBtn = document.getElementById('search-trigger-btn');
+const drawerToggleBtn = document.getElementById('drawer-toggle-btn');
+
+function triggerSearchPalette() {
+  openCommandPalette({
+    cards: Object.values(currentCards || {}),
+    meta: currentMeta,
+    onNavigate: loadAndRender,
+    showToast,
+  });
+}
+
+searchTriggerBtn.addEventListener('click', triggerSearchPalette);
+
+if (drawerToggleBtn) {
+  drawerToggleBtn.addEventListener('click', () => {
+    toggleTabDrawer(
+      () => currentMeta?.activeWorkspaceId || 'ws_default',
+      showToast,
+      loadAndRender
+    );
+  });
+}
 
 /**
  * Creates an image or letter-tile fallback element for a card's favicon.
@@ -531,7 +556,17 @@ document.addEventListener('keydown', (e) => {
   // Search trigger: / or Ctrl/Cmd+K
   if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
     e.preventDefault();
-    document.getElementById('search-trigger-btn').click();
+    triggerSearchPalette();
+  }
+
+  // Toggle Tab Drawer: 't' (FR-5.9)
+  if (e.key === 't' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault();
+    toggleTabDrawer(
+      () => currentMeta?.activeWorkspaceId || 'ws_default',
+      showToast,
+      loadAndRender
+    );
   }
 
   // Workspace cycling: [ and ]
