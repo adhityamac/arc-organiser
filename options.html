@@ -127,6 +127,51 @@
       <h1><span>⚡</span> Minimal Board Settings</h1>
     </header>
 
+    <h2>Personalization & Themes</h2>
+    <div class="section-card">
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Appearance Theme</div>
+          <div class="setting-desc">Select dark, light, or follow system theme.</div>
+        </div>
+        <select id="themeSelect">
+          <option value="dark">Dark (Deep Obsidian)</option>
+          <option value="light">Light (Clean Paper)</option>
+          <option value="auto">Auto (System preference)</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Board Wallpaper</div>
+          <div class="setting-desc">Choose a bundled subtle gradient or upload your own image.</div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <select id="wallpaperSelect">
+            <option value="none">None (Pure Obsidian)</option>
+            <option value="gradient:sunset">Obsidian Sunset</option>
+            <option value="gradient:space">Deep Space</option>
+            <option value="gradient:nordic">Nordic Frost</option>
+            <option value="gradient:violet">Midnight Violet</option>
+            <option value="custom">Custom Uploaded Image</option>
+          </select>
+          <input type="file" id="wallpaperUploadInput" accept="image/*" style="display: none;">
+          <button id="uploadWallpaperBtn" class="btn" style="padding: 4px 10px; font-size: 11px; display: none;">Upload Image</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Wallpaper Dim & Blur</div>
+          <div class="setting-desc">Adjust opacity dimming and background blur to preserve card text contrast.</div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <label style="font-size: 11px;">Dim: <input type="range" id="wallpaperDim" min="0" max="80" value="40" style="vertical-align: middle;"></label>
+          <label style="font-size: 11px;">Blur: <input type="range" id="wallpaperBlur" min="0" max="20" value="0" style="vertical-align: middle;"></label>
+        </div>
+      </div>
+    </div>
+
     <h2>Capture & Behavior</h2>
     <div class="section-card">
       <div class="setting-row">
@@ -194,6 +239,28 @@
           <div class="setting-desc">Cards older than this without interaction will be flagged for Inbox review.</div>
         </div>
         <input type="number" id="staleAfterDays" min="1" max="180" style="width: 70px;">
+      </div>
+    </div>
+
+    <h2>Auto-Sort Rules Engine</h2>
+    <div class="section-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div class="setting-desc">Deterministic rules applied on capture and bookmark import. First match wins.</div>
+        <button id="addRuleBtn" class="btn" style="padding: 4px 10px; font-size: 11px;">+ Add Rule</button>
+      </div>
+      <div id="rulesList" style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 12px; color: var(--text-muted);">No rules defined yet.</div>
+      </div>
+    </div>
+
+    <h2>Duplicate Finder & Cleaner</h2>
+    <div class="section-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div class="setting-desc">Scan all workspaces for matching URLs and clean up duplicate bookmarks.</div>
+        <button id="scanDuplicatesBtn" class="btn" style="padding: 4px 10px; font-size: 11px;">Scan Duplicates</button>
+      </div>
+      <div id="duplicatesList" style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 12px; color: var(--text-muted);">Click Scan to search for duplicates across all workspaces.</div>
       </div>
     </div>
 

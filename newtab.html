@@ -93,14 +93,29 @@
       <button id="add-column-btn" class="btn-subtle" title="Add a new column (Shift+N)">
         <span>+ Column</span>
       </button>
+      <button id="triage-trigger-btn" class="btn-subtle" title="Inbox Triage Review (r)">
+        <span>Review</span>
+      </button>
       <button id="drawer-toggle-btn" class="btn-subtle" title="Toggle Open Tabs Drawer (t)">
         <span>Tabs</span>
+      </button>
+      <button id="view-mode-btn" class="btn-icon" title="Toggle Board / List View">
+        📋
+      </button>
+      <button id="theme-toggle-btn" class="btn-icon" title="Toggle Dark / Light Theme">
+        🌙
       </button>
       <button id="settings-btn" class="btn-icon" title="Settings & Backups">
         ⚙️
       </button>
     </div>
   </header>
+
+  <!-- Dynamic Wallpaper Layer (FR-7.2) -->
+  <div id="wallpaper-layer" class="wallpaper-layer"></div>
+
+  <!-- Modular Post-Paint Widgets Strip (FR-7.3) -->
+  <section id="widgets-container" class="widgets-container" aria-label="Widgets Strip"></section>
 
   <!-- Main Kanban Board Area -->
   <main id="board-container" class="board-container" role="region" aria-label="Kanban Board">

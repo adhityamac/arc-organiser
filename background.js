@@ -10,6 +10,7 @@ import {
   saveCard,
   transaction,
 } from './lib/store.js';
+import { evaluateRules } from './lib/rules.js';
 
 let badgeTimer = null;
 
@@ -133,21 +134,34 @@ async function handleQuickSave() {
 
     showBadge('DUP', '#f59e0b');
   } else {
-    // New card: save into Inbox column
+    // New card: evaluate auto-sort rules (FR-1.8)
     const cardId = `card_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const cardData = {
+      id: cardId,
+      type: 'link',
+      title: activeTab.title || host || activeTab.url,
+      url: activeTab.url,
+      nurl,
+      host,
+      note: '',
+      tags: [],
+      pinned: false,
+    };
+
+    const rules = meta.rules || [];
+    const wsLayoutKey = `ws:${activeWorkspaceId}`;
+    const wsShards = await new Promise((r) => chrome.storage.local.get(wsLayoutKey, r));
+    const columnsMap = wsShards[wsLayoutKey]?.columns || {};
+
+    const { targetColumnId, addTags } = evaluateRules(cardData, rules, columnsMap);
+    if (addTags.length > 0) {
+      cardData.tags = addTags;
+    }
+
     await saveCard({
-      cardData: {
-        id: cardId,
-        type: 'link',
-        title: activeTab.title || host || activeTab.url,
-        url: activeTab.url,
-        nurl,
-        host,
-        note: '',
-        tags: [],
-        pinned: false,
-      },
+      cardData,
       workspaceId: activeWorkspaceId,
+      targetColumnId: targetColumnId || null,
       prepend: true,
     });
 

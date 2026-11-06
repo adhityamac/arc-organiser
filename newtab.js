@@ -22,6 +22,9 @@ import {
 import { renderMarkdownLite } from './lib/ui/markdown.js';
 import { openCommandPalette } from './lib/ui/palette.js';
 import { toggleTabDrawer } from './lib/ui/drawer.js';
+import { mountWidgets } from './lib/ui/widgets.js';
+import { openTriageMode } from './lib/ui/triage.js';
+import { getBlob } from './lib/db.js';
 
 performance.mark('mbt_init_start');
 
@@ -38,6 +41,11 @@ const settingsBtn = document.getElementById('settings-btn');
 const addColumnBtn = document.getElementById('add-column-btn');
 const searchTriggerBtn = document.getElementById('search-trigger-btn');
 const drawerToggleBtn = document.getElementById('drawer-toggle-btn');
+const widgetsContainer = document.getElementById('widgets-container');
+const wallpaperLayer = document.getElementById('wallpaper-layer');
+const triageTriggerBtn = document.getElementById('triage-trigger-btn');
+const viewModeBtn = document.getElementById('view-mode-btn');
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
 
 function triggerSearchPalette() {
   openCommandPalette({
@@ -46,6 +54,91 @@ function triggerSearchPalette() {
     onNavigate: loadAndRender,
     showToast,
   });
+}
+
+function triggerTriage() {
+  const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
+  openTriageMode({
+    workspaceId: activeWsId,
+    layout: currentLayout,
+    cards: currentCards,
+    onComplete: loadAndRender,
+    showToast,
+  });
+}
+
+if (triageTriggerBtn) {
+  triageTriggerBtn.addEventListener('click', triggerTriage);
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  if (themeToggleBtn) {
+    themeToggleBtn.textContent = theme === 'light' ? '☀️' : '🌙';
+  }
+}
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', async () => {
+    const currentTheme = currentMeta?.settings?.theme || 'dark';
+    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    currentMeta.settings = currentMeta.settings || {};
+    currentMeta.settings.theme = nextTheme;
+    applyTheme(nextTheme);
+    await chrome.storage.local.set({ meta: currentMeta });
+  });
+}
+
+function applyViewMode(mode) {
+  if (mode === 'list') {
+    boardContainer.classList.add('view-mode-list');
+    if (viewModeBtn) viewModeBtn.textContent = '🗂️';
+  } else {
+    boardContainer.classList.remove('view-mode-list');
+    if (viewModeBtn) viewModeBtn.textContent = '📋';
+  }
+}
+
+if (viewModeBtn) {
+  viewModeBtn.addEventListener('click', async () => {
+    const currentMode = currentMeta?.settings?.viewMode || 'board';
+    const nextMode = currentMode === 'board' ? 'list' : 'board';
+    currentMeta.settings = currentMeta.settings || {};
+    currentMeta.settings.viewMode = nextMode;
+    applyViewMode(nextMode);
+    await chrome.storage.local.set({ meta: currentMeta });
+  });
+}
+
+async function applyWallpaper(settings) {
+  if (!wallpaperLayer) return;
+  const wp = settings?.wallpaper;
+  const dim = settings?.wallpaperDim ?? 40;
+  const blur = settings?.wallpaperBlur ?? 0;
+
+  wallpaperLayer.style.opacity = `${(100 - dim) / 100}`;
+  wallpaperLayer.style.filter = blur > 0 ? `blur(${blur}px)` : 'none';
+
+  if (!wp || wp === 'none') {
+    wallpaperLayer.style.backgroundImage = 'none';
+  } else if (wp.startsWith('gradient:')) {
+    const gradients = {
+      'gradient:sunset': 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #701a75 100%)',
+      'gradient:space': 'linear-gradient(135deg, #09090b 0%, #172554 50%, #030712 100%)',
+      'gradient:nordic': 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+      'gradient:violet': 'linear-gradient(135deg, #2e1065 0%, #3b0764 50%, #0f172a 100%)',
+    };
+    wallpaperLayer.style.backgroundImage = gradients[wp] || 'none';
+  } else if (wp === 'custom') {
+    try {
+      const blob = await getBlob('wallpaper_custom');
+      if (blob) {
+        wallpaperLayer.style.backgroundImage = `url(${URL.createObjectURL(blob)})`;
+      }
+    } catch {
+      wallpaperLayer.style.backgroundImage = 'none';
+    }
+  }
 }
 
 searchTriggerBtn.addEventListener('click', triggerSearchPalette);
@@ -477,9 +570,28 @@ async function loadAndRender() {
   currentLayout = wsShards[`ws:${activeWsId}`];
   currentCards = wsShards[`cards:${activeWsId}`] || {};
 
+  applyTheme(currentMeta.settings?.theme || 'dark');
+  applyViewMode(currentMeta.settings?.viewMode || 'board');
+  applyWallpaper(currentMeta.settings);
+
   if (currentLayout) {
     renderBoard(currentLayout, currentCards, activeWsId);
   }
+
+  // Mount widgets asynchronously (FR-7.3)
+  setTimeout(() => {
+    mountWidgets(widgetsContainer, {
+      meta: currentMeta,
+      cards: currentCards,
+      layout: currentLayout,
+      onTriggerTriage: triggerTriage,
+      onSaveSettings: async (key, val) => {
+        currentMeta.settings = currentMeta.settings || {};
+        currentMeta.settings[key] = val;
+        await chrome.storage.local.set({ meta: currentMeta });
+      },
+    });
+  }, 30);
 
   performance.mark('mbt_init_end');
   performance.measure('mbt_board_first_paint', 'mbt_init_start', 'mbt_init_end');
@@ -557,6 +669,12 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
     e.preventDefault();
     triggerSearchPalette();
+  }
+
+  // Triage review shortcut: 'r' (FR-8.1)
+  if (e.key === 'r' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault();
+    triggerTriage();
   }
 
   // Toggle Tab Drawer: 't' (FR-5.9)

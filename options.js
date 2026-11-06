@@ -9,9 +9,16 @@ import {
   mergeBackupData,
   importNetscapeFolders,
 } from './lib/merge.js';
-import { saveSnapshot, listSnapshots, getSnapshot } from './lib/db.js';
+import { saveSnapshot, listSnapshots, getSnapshot, saveBlob } from './lib/db.js';
 
 // DOM Hooks
+const themeSelect = document.getElementById('themeSelect');
+const wallpaperSelect = document.getElementById('wallpaperSelect');
+const wallpaperUploadInput = document.getElementById('wallpaperUploadInput');
+const uploadWallpaperBtn = document.getElementById('uploadWallpaperBtn');
+const wallpaperDim = document.getElementById('wallpaperDim');
+const wallpaperBlur = document.getElementById('wallpaperBlur');
+
 const closeTabOnQuickSaveEl = document.getElementById('closeTabOnQuickSave');
 const openLinksInNewTabEl = document.getElementById('openLinksInNewTab');
 const dedupeScopeEl = document.getElementById('dedupeScope');
@@ -20,6 +27,11 @@ const toolbarClickActionEl = document.getElementById('toolbarClickAction');
 const trashRetentionDaysEl = document.getElementById('trashRetentionDays');
 const staleAfterDaysEl = document.getElementById('staleAfterDays');
 const storageFootprintDisplay = document.getElementById('storageFootprintDisplay');
+
+const addRuleBtn = document.getElementById('addRuleBtn');
+const rulesList = document.getElementById('rulesList');
+const scanDuplicatesBtn = document.getElementById('scanDuplicatesBtn');
+const duplicatesList = document.getElementById('duplicatesList');
 
 const exportBackupBtn = document.getElementById('exportBackupBtn');
 const importJsonBtn = document.getElementById('importJsonBtn');
@@ -38,6 +50,12 @@ async function loadSettings() {
   const meta = shards.meta || {};
   const settings = meta.settings || {};
 
+  themeSelect.value = settings.theme || 'dark';
+  wallpaperSelect.value = settings.wallpaper || 'none';
+  uploadWallpaperBtn.style.display = settings.wallpaper === 'custom' ? 'inline-block' : 'none';
+  wallpaperDim.value = settings.wallpaperDim ?? 40;
+  wallpaperBlur.value = settings.wallpaperBlur ?? 0;
+
   closeTabOnQuickSaveEl.checked = !!settings.closeTabOnQuickSave;
   openLinksInNewTabEl.checked = settings.openLinksInNewTab !== false;
   dedupeScopeEl.value = settings.dedupeScope || 'workspace';
@@ -47,6 +65,7 @@ async function loadSettings() {
   staleAfterDaysEl.value = settings.staleAfterDays || 14;
 
   updateStorageMeter();
+  renderRules(meta.rules || []);
   renderSnapshots();
   renderTrash(shards.trash || []);
 }
@@ -70,7 +89,70 @@ async function saveSetting(key, value) {
   });
 }
 
-// Settings Listeners
+// Personalization Listeners
+themeSelect.addEventListener('change', () => saveSetting('theme', themeSelect.value));
+
+wallpaperSelect.addEventListener('change', async () => {
+  const val = wallpaperSelect.value;
+  uploadWallpaperBtn.style.display = val === 'custom' ? 'inline-block' : 'none';
+  await saveSetting('wallpaper', val);
+  if (val === 'custom') {
+    wallpaperUploadInput.click();
+  }
+});
+
+uploadWallpaperBtn.addEventListener('click', () => wallpaperUploadInput.click());
+
+wallpaperUploadInput.addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const img = new Image();
+    img.onload = async () => {
+      // Downscale to max 2560px on canvas to adhere to memory budget
+      const maxDim = 2560;
+      let w = img.width;
+      let h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await saveBlob('wallpaper_custom', blob);
+          await saveSetting('wallpaper', 'custom');
+          alert('Custom wallpaper saved successfully!');
+        }
+      }, 'image/webp', 0.85);
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+wallpaperDim.addEventListener('change', () =>
+  saveSetting('wallpaperDim', parseInt(wallpaperDim.value, 10))
+);
+
+wallpaperBlur.addEventListener('change', () =>
+  saveSetting('wallpaperBlur', parseInt(wallpaperBlur.value, 10))
+);
+
+// Capture & Behavior Listeners
 closeTabOnQuickSaveEl.addEventListener('change', () =>
   saveSetting('closeTabOnQuickSave', closeTabOnQuickSaveEl.checked)
 );
@@ -95,7 +177,177 @@ staleAfterDaysEl.addEventListener('change', () => {
   if (!isNaN(val) && val > 0) saveSetting('staleAfterDays', val);
 });
 
-// 1. Export JSON Backup (FR-6.1)
+// --------------------------------------------------------------------------
+// Auto-Sort Rules Engine (FR-8.3)
+// --------------------------------------------------------------------------
+function renderRules(rules) {
+  rulesList.innerHTML = '';
+  if (rules.length === 0) {
+    rulesList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted);">No auto-sort rules defined yet.</div>';
+    return;
+  }
+
+  rules.forEach((rule, idx) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.justifyContent = 'space-between';
+    row.style.padding = '8px 12px';
+    row.style.background = 'var(--bg-app)';
+    row.style.borderRadius = '6px';
+    row.style.fontSize = '12px';
+
+    const desc = [];
+    if (rule.match.host) desc.push(`Host ends with "${rule.match.host}"`);
+    if (rule.match.urlContains) desc.push(`URL contains "${rule.match.urlContains}"`);
+    if (rule.match.titleContains) desc.push(`Title contains "${rule.match.titleContains}"`);
+    if (rule.match.tag) desc.push(`Has tag #${rule.match.tag}`);
+
+    const targetDesc = rule.toColumn ? ` → Move to "${rule.toColumn}"` : '';
+    const tagsDesc = rule.addTags && rule.addTags.length > 0 ? ` + Tags [${rule.addTags.join(', ')}]` : '';
+
+    const textDiv = document.createElement('div');
+    textDiv.innerHTML = `<strong>Rule ${idx + 1}:</strong> If ${desc.join(' AND ')}${targetDesc}${tagsDesc}`;
+    row.appendChild(textDiv);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn';
+    delBtn.style.padding = '2px 8px';
+    delBtn.style.fontSize = '11px';
+    delBtn.style.background = 'var(--accent-danger)';
+    delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', async () => {
+      await transaction([], (shards, meta) => {
+        meta.rules = (meta.rules || []).filter((r) => r.id !== rule.id);
+        return {};
+      });
+      loadSettings();
+    });
+    row.appendChild(delBtn);
+
+    rulesList.appendChild(row);
+  });
+}
+
+addRuleBtn.addEventListener('click', async () => {
+  const host = prompt('Match domain/host (e.g. github.com) or leave blank:');
+  const urlContains = prompt('Match URL contains (e.g. /pull/) or leave blank:');
+  const toColumn = prompt('Target Column Name (e.g. Dev) or leave blank:');
+  const addTagsStr = prompt('Add tags (comma separated, e.g. dev, git) or leave blank:');
+
+  const match = {};
+  if (host && host.trim()) match.host = host.trim().toLowerCase();
+  if (urlContains && urlContains.trim()) match.urlContains = urlContains.trim().toLowerCase();
+
+  if (Object.keys(match).length === 0) {
+    alert('Please specify at least one match criteria.');
+    return;
+  }
+
+  const addTags = addTagsStr
+    ? addTagsStr.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean)
+    : [];
+
+  const newRule = {
+    id: `rule_${Date.now()}`,
+    match,
+    toColumn: toColumn ? toColumn.trim() : null,
+    addTags,
+  };
+
+  await transaction([], (shards, meta) => {
+    meta.rules = meta.rules || [];
+    meta.rules.push(newRule);
+    return {};
+  });
+
+  loadSettings();
+});
+
+// --------------------------------------------------------------------------
+// Duplicate Finder & Cleaner (FR-8.4)
+// --------------------------------------------------------------------------
+scanDuplicatesBtn.addEventListener('click', async () => {
+  duplicatesList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted);">Scanning all workspaces...</div>';
+
+  const allShards = await new Promise((res) => chrome.storage.local.get(null, res));
+  const meta = allShards.meta || { workspaces: [] };
+  const urlMap = new Map();
+
+  for (const ws of meta.workspaces) {
+    const cards = allShards[`cards:${ws.id}`] || {};
+    for (const card of Object.values(cards)) {
+      if (!card.nurl) continue;
+      if (!urlMap.has(card.nurl)) {
+        urlMap.set(card.nurl, []);
+      }
+      urlMap.get(card.nurl).push({ card, workspaceId: ws.id });
+    }
+  }
+
+  const duplicateGroups = Array.from(urlMap.entries()).filter(([_, list]) => list.length > 1);
+
+  duplicatesList.innerHTML = '';
+  if (duplicateGroups.length === 0) {
+    duplicatesList.innerHTML = '<div style="font-size: 12px; color: var(--accent-success);">✅ No duplicates found! All saved URLs are unique.</div>';
+    return;
+  }
+
+  duplicateGroups.forEach(([nurl, items]) => {
+    const groupEl = document.createElement('div');
+    groupEl.style.padding = '10px';
+    groupEl.style.background = 'var(--bg-app)';
+    groupEl.style.borderRadius = '6px';
+    groupEl.style.display = 'flex';
+    groupEl.style.flexDirection = 'column';
+    groupEl.style.gap = '6px';
+
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.fontSize = '12px';
+    header.innerHTML = `<strong>${nurl}</strong> <span style="color: var(--accent-warning);">${items.length} copies</span>`;
+    groupEl.appendChild(header);
+
+    const mergeBtn = document.createElement('button');
+    mergeBtn.className = 'btn';
+    mergeBtn.style.padding = '3px 8px';
+    mergeBtn.style.fontSize = '11px';
+    mergeBtn.textContent = 'Merge & Keep Latest';
+    mergeBtn.addEventListener('click', async () => {
+      // Sort items by updatedAt descending
+      items.sort((a, b) => (b.card.updatedAt || 0) - (a.card.updatedAt || 0));
+      const keepItem = items[0];
+      const toRemove = items.slice(1);
+
+      for (const rem of toRemove) {
+        const wsKey = `ws:${rem.workspaceId}`;
+        const cardsKey = `cards:${rem.workspaceId}`;
+        await transaction([wsKey, cardsKey], (shards) => {
+          const l = shards[wsKey];
+          const c = shards[cardsKey] || {};
+          if (l && l.columns) {
+            for (const col of Object.values(l.columns)) {
+              col.cardIds = col.cardIds.filter((id) => id !== rem.card.id);
+            }
+          }
+          delete c[rem.card.id];
+          return { [wsKey]: l, [cardsKey]: c };
+        });
+      }
+
+      alert('Duplicates merged successfully!');
+      scanDuplicatesBtn.click();
+    });
+
+    groupEl.appendChild(mergeBtn);
+    duplicatesList.appendChild(groupEl);
+  });
+});
+
+// --------------------------------------------------------------------------
+// Export & Import Handlers
+// --------------------------------------------------------------------------
 exportBackupBtn.addEventListener('click', async () => {
   const allShards = await new Promise((res) => chrome.storage.local.get(null, res));
   const jsonStr = JSON.stringify(allShards, null, 2);
@@ -113,7 +365,6 @@ exportBackupBtn.addEventListener('click', async () => {
   URL.revokeObjectURL(url);
 });
 
-// 2. Import JSON Backup (FR-6.2)
 importJsonBtn.addEventListener('click', () => importJsonInput.click());
 
 importJsonInput.addEventListener('change', async (e) => {
@@ -136,7 +387,6 @@ importJsonInput.addEventListener('change', async (e) => {
 
       const currentShards = await new Promise((res) => chrome.storage.local.get(null, res));
 
-      // Always snapshot before overwrite
       if (modeChoice === 'overwrite') {
         await saveSnapshot(currentShards, 'pre-overwrite');
         await chrome.storage.local.clear();
@@ -160,7 +410,6 @@ importJsonInput.addEventListener('change', async (e) => {
   reader.readAsText(file);
 });
 
-// 3. Import Browser HTML Bookmarks (FR-6.3)
 importHtmlBtn.addEventListener('click', () => importHtmlInput.click());
 
 importHtmlInput.addEventListener('change', (e) => {
@@ -192,7 +441,6 @@ importHtmlInput.addEventListener('change', (e) => {
   reader.readAsText(file);
 });
 
-// 4. Import Native Browser Bookmarks (chrome.bookmarks)
 importNativeBookmarksBtn.addEventListener('click', async () => {
   if (!chrome.bookmarks) {
     chrome.permissions.request({ permissions: ['bookmarks'] }, async (granted) => {
@@ -246,7 +494,9 @@ async function runNativeBookmarkImport() {
   loadSettings();
 }
 
-// 5. Render Snapshots (FR-6.6)
+// --------------------------------------------------------------------------
+// Snapshots & Trash Management
+// --------------------------------------------------------------------------
 async function renderSnapshots() {
   try {
     const list = await listSnapshots();
@@ -295,7 +545,6 @@ async function renderSnapshots() {
   }
 }
 
-// 6. Trash Management (FR-4.4)
 function renderTrash(trashItems) {
   trashList.innerHTML = '';
   if (trashItems.length === 0) {
