@@ -8,9 +8,18 @@ import {
   deleteCard,
   undoLastAction,
   saveCard,
+  transaction,
   CONTEXT_ID,
 } from './lib/store.js';
 import { initDragAndDrop, handleKeyboardReorder } from './lib/dnd.js';
+import {
+  openCardEditModal,
+  openAddLinkModal,
+  openAddNoteModal,
+  openColumnSettingsModal,
+  openMoveModal,
+} from './lib/ui/modal.js';
+import { renderMarkdownLite } from './lib/ui/markdown.js';
 
 performance.mark('mbt_init_start');
 
@@ -177,8 +186,21 @@ function createCardElement(card, workspaceId) {
   if (card.body || card.note) {
     const notePreview = document.createElement('div');
     notePreview.className = 'card-note-preview';
-    notePreview.textContent = card.body || card.note;
+    notePreview.innerHTML = renderMarkdownLite(card.body || card.note);
     content.appendChild(notePreview);
+  }
+
+  // Tag pills
+  if (Array.isArray(card.tags) && card.tags.length > 0) {
+    const tagsContainer = document.createElement('div');
+    tagsContainer.className = 'card-tags';
+    for (const tag of card.tags) {
+      const pill = document.createElement('span');
+      pill.className = 'tag-pill';
+      pill.textContent = `#${tag}`;
+      tagsContainer.appendChild(pill);
+    }
+    content.appendChild(tagsContainer);
   }
 
   main.appendChild(content);
@@ -187,6 +209,23 @@ function createCardElement(card, workspaceId) {
   // Hover Actions
   const actions = document.createElement('div');
   actions.className = 'card-actions';
+
+  // Edit Card
+  const editBtn = document.createElement('button');
+  editBtn.className = 'card-action-btn';
+  editBtn.title = 'Edit card (e)';
+  editBtn.textContent = '✎';
+  editBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCardEditModal({
+      card,
+      workspaceId,
+      layout: currentLayout,
+      meta: currentMeta,
+      onSave: loadAndRender,
+    });
+  });
+  actions.appendChild(editBtn);
 
   // Copy URL
   if (card.url) {
@@ -261,6 +300,44 @@ function createColumnElement(col, cardsMap, workspaceId) {
   const title = document.createElement('h2');
   title.className = 'col-title';
   title.textContent = col.title;
+  title.title = 'Double-click to rename';
+
+  // Inline rename (FR-2.2)
+  title.addEventListener('dblclick', () => {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'col-title-inline-edit';
+    input.value = col.title;
+    title.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let committed = false;
+    const commit = async () => {
+      if (committed) return;
+      committed = true;
+      const newTitle = input.value.trim() || col.title;
+      const wsKey = `ws:${workspaceId}`;
+      await transaction([wsKey], (shards) => {
+        const l = shards[wsKey];
+        if (l.columns[col.id]) l.columns[col.id].title = newTitle;
+        return { [wsKey]: l };
+      });
+      loadAndRender();
+    };
+
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commit();
+      } else if (e.key === 'Escape') {
+        committed = true;
+        input.replaceWith(title);
+      }
+    });
+  });
+
   left.appendChild(title);
 
   const badge = document.createElement('span');
@@ -273,31 +350,40 @@ function createColumnElement(col, cardsMap, workspaceId) {
   const right = document.createElement('div');
   right.className = 'col-header-right';
 
-  // Add Link button
+  // Add Note button (FR-4.5)
+  const noteBtn = document.createElement('button');
+  noteBtn.className = 'btn-icon';
+  noteBtn.title = 'Add Note to this column';
+  noteBtn.textContent = '📝';
+  noteBtn.addEventListener('click', () => {
+    openAddNoteModal({ workspaceId, columnId: col.id, onAdded: loadAndRender });
+  });
+  right.appendChild(noteBtn);
+
+  // Add Link button (FR-4.3)
   const addBtn = document.createElement('button');
   addBtn.className = 'btn-icon';
-  addBtn.title = 'Add Link to this column';
+  addBtn.title = 'Add Link(s) to this column';
   addBtn.textContent = '+';
-  addBtn.addEventListener('click', async () => {
-    const url = prompt('Enter link URL:');
-    if (!url) return;
-    try {
-      await saveCard({
-        cardData: {
-          title: url,
-          url,
-          nurl: url.toLowerCase(),
-          host: new URL(url).hostname.replace(/^www\./i, ''),
-        },
-        workspaceId,
-        targetColumnId: col.id,
-        prepend: false,
-      });
-    } catch {
-      showToast('Invalid URL', false);
-    }
+  addBtn.addEventListener('click', () => {
+    openAddLinkModal({ workspaceId, columnId: col.id, onAdded: loadAndRender });
   });
   right.appendChild(addBtn);
+
+  // Column Options button (FR-2.2, FR-2.5)
+  const colOptionsBtn = document.createElement('button');
+  colOptionsBtn.className = 'btn-icon';
+  colOptionsBtn.title = 'Column options & actions';
+  colOptionsBtn.textContent = '⋮';
+  colOptionsBtn.addEventListener('click', () => {
+    openColumnSettingsModal({
+      col,
+      workspaceId,
+      layout: currentLayout,
+      onUpdate: loadAndRender,
+    });
+  });
+  right.appendChild(colOptionsBtn);
 
   header.appendChild(right);
   colEl.appendChild(header);
@@ -467,12 +553,31 @@ document.addEventListener('keydown', (e) => {
     addColumnBtn.click();
   }
 
+  // Edit card shortcut: 'e' on focused card
+  if (e.key === 'e' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    const focusedCard = document.activeElement?.closest('.card');
+    if (focusedCard) {
+      const cardId = focusedCard.dataset.cardId;
+      const card = currentCards && currentCards[cardId];
+      if (card) {
+        e.preventDefault();
+        openCardEditModal({
+          card,
+          workspaceId: currentMeta?.activeWorkspaceId || 'ws_default',
+          layout: currentLayout,
+          meta: currentMeta,
+          onSave: loadAndRender,
+        });
+      }
+    }
+  }
+
   // Keyboard reordering alternative (Alt+Arrows, m)
   handleKeyboardReorder(
     e,
     currentMeta?.activeWorkspaceId || 'ws_default',
     showToast,
-    null
+    (cardId, wsId) => openMoveModal(cardId, wsId, currentLayout, currentMeta, loadAndRender)
   );
 });
 
