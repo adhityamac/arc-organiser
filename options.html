@@ -197,6 +197,74 @@
       </div>
     </div>
 
+    <h2>Backup, Import & Portability</h2>
+    <div class="section-card">
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Export Full JSON Backup</div>
+          <div class="setting-desc">Download a complete, portable backup file of all workspaces, columns, cards, and settings.</div>
+        </div>
+        <button id="exportBackupBtn" class="btn">Export Backup (.json)</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Import JSON Backup</div>
+          <div class="setting-desc">Restore or merge data from a previously exported Minimal Board JSON backup.</div>
+        </div>
+        <div>
+          <input type="file" id="importJsonInput" accept=".json" style="display: none;">
+          <button id="importJsonBtn" class="btn" style="background: var(--bg-card); border: 1px solid var(--border-subtle);">Select JSON File</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Import Browser HTML Bookmarks</div>
+          <div class="setting-desc">Import Netscape HTML bookmark files exported from Chrome, Firefox, Safari, or Edge.</div>
+        </div>
+        <div>
+          <input type="file" id="importHtmlInput" accept=".html,.htm" style="display: none;">
+          <button id="importHtmlBtn" class="btn" style="background: var(--bg-card); border: 1px solid var(--border-subtle);">Select HTML File</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Import Directly from Browser</div>
+          <div class="setting-desc">Access installed browser bookmarks via native API and convert bookmark folders into columns.</div>
+        </div>
+        <button id="importNativeBookmarksBtn" class="btn" style="background: var(--bg-card); border: 1px solid var(--border-subtle);">Import Bookmarks</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-title">Local Storage Footprint</div>
+          <div class="setting-desc">Current chrome.storage.local usage on your device.</div>
+        </div>
+        <div id="storageFootprintDisplay" style="font-size: 12px; font-weight: 600; color: var(--accent-primary);">Calculating...</div>
+      </div>
+    </div>
+
+    <h2>Rolling Snapshots (IndexedDB)</h2>
+    <div class="section-card">
+      <div class="setting-desc" style="margin-bottom: 12px;">Automatic snapshots created before migrations, imports, or major deletions. Capped at last 10 snapshots.</div>
+      <div id="snapshotsList" style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 12px; color: var(--text-muted);">No snapshots recorded yet.</div>
+      </div>
+    </div>
+
+    <h2>Trash Management</h2>
+    <div class="section-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div class="setting-desc">Deleted cards pending retention cleanup.</div>
+        <button id="emptyTrashBtn" class="btn" style="background: var(--accent-danger); padding: 4px 10px; font-size: 11px;">Empty Trash</button>
+      </div>
+      <div id="trashList" style="display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto;">
+        <div style="font-size: 12px; color: var(--text-muted);">Trash is empty.</div>
+      </div>
+    </div>
+
     <div class="privacy-notice">
       <strong>🔒 Privacy by Construction:</strong> Minimal Board Tab is 100% local-first. All your bookmarks, workspaces, and notes remain on your machine inside browser storage. No servers, no tracking, and no external network calls.
     </div>
