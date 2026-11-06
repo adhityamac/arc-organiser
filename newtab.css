@@ -238,6 +238,42 @@ button, input, select, textarea {
   gap: 4px;
 }
 
+/* Column Drag Handle */
+.col-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  user-select: none;
+}
+.col-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Drag and Drop Visual Indicators */
+.drop-indicator-line {
+  position: fixed;
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.9);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1000;
+  display: none;
+  transition: top 60ms ease, left 60ms ease;
+}
+
+.card.is-dragging {
+  opacity: 0.35 !important;
+  transform: scale(0.97);
+  border: 1px dashed var(--accent-primary) !important;
+}
+
+.column.is-dragging-column {
+  opacity: 0.35 !important;
+  border: 1px dashed var(--accent-primary) !important;
+}
+
 /* Cards List */
 .cards-list {
   flex: 1;

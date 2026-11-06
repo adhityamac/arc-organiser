@@ -10,6 +10,7 @@ import {
   saveCard,
   CONTEXT_ID,
 } from './lib/store.js';
+import { initDragAndDrop, handleKeyboardReorder } from './lib/dnd.js';
 
 performance.mark('mbt_init_start');
 
@@ -136,6 +137,7 @@ function createCardElement(card, workspaceId) {
   const cardEl = document.createElement('article');
   cardEl.className = 'card';
   cardEl.dataset.cardId = card.id;
+  cardEl.draggable = true;
   cardEl.tabIndex = 0;
 
   const main = document.createElement('div');
@@ -243,6 +245,13 @@ function createColumnElement(col, cardsMap, workspaceId) {
 
   const left = document.createElement('div');
   left.className = 'col-header-left';
+
+  const handle = document.createElement('span');
+  handle.className = 'col-drag-handle';
+  handle.textContent = '⋮⋮';
+  handle.draggable = true;
+  handle.title = 'Drag to reorder column';
+  left.appendChild(handle);
 
   const emoji = document.createElement('span');
   emoji.className = 'col-emoji';
@@ -457,7 +466,22 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     addColumnBtn.click();
   }
+
+  // Keyboard reordering alternative (Alt+Arrows, m)
+  handleKeyboardReorder(
+    e,
+    currentMeta?.activeWorkspaceId || 'ws_default',
+    showToast,
+    null
+  );
 });
+
+// Initialize Drag and Drop engine
+initDragAndDrop(
+  boardContainer,
+  () => currentMeta?.activeWorkspaceId || 'ws_default',
+  showToast
+);
 
 // Initial boot
 loadAndRender();
