@@ -1,0 +1,22 @@
+{
+  "extensionName": {
+    "message": "Minimal Board Tab",
+    "description": "Name der Erweiterung"
+  },
+  "extensionDescription": {
+    "message": "Tastaturfokussierter visueller Lesezeichen- und Tab-Manager. Schnell, ruhig, lokal.",
+    "description": "Beschreibung der Erweiterung"
+  },
+  "cmdQuickSave": {
+    "message": "Aktiven Tab schnell im Posteingang speichern",
+    "description": "Tastenkombination für schnelles Speichern"
+  },
+  "cmdSaveWindow": {
+    "message": "Alle Tabs des aktuellen Fensters als Sitzung speichern",
+    "description": "Tastenkombination für Fensterspeicherung"
+  },
+  "cmdOpenBoard": {
+    "message": "Minimal Board Tab öffnen",
+    "description": "Tastenkombination zum Öffnen des Boards"
+  }
+}

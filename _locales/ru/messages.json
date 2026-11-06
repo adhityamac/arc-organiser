@@ -1,0 +1,22 @@
+{
+  "extensionName": {
+    "message": "Minimal Board Tab",
+    "description": "Название расширения"
+  },
+  "extensionDescription": {
+    "message": "Визуальный менеджер закладок и вкладок. Быстрый, спокойный, локальный.",
+    "description": "Описание расширения"
+  },
+  "cmdQuickSave": {
+    "message": "Быстро сохранить вкладку во Входящие",
+    "description": "Быстрое сохранение активной вкладки"
+  },
+  "cmdSaveWindow": {
+    "message": "Сохранить вкладки окна как сессию",
+    "description": "Сохранить окно"
+  },
+  "cmdOpenBoard": {
+    "message": "Открыть Minimal Board Tab",
+    "description": "Открыть доску"
+  }
+}

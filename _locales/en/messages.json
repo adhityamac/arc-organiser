@@ -1,0 +1,22 @@
+{
+  "extensionName": {
+    "message": "Minimal Board Tab",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Keyboard-first visual bookmark & tab manager. Fast, calm, local-first.",
+    "description": "Description of the extension"
+  },
+  "cmdQuickSave": {
+    "message": "Quick save active tab to Inbox",
+    "description": "Shortcut description for quick save"
+  },
+  "cmdSaveWindow": {
+    "message": "Save current window tabs as a session column",
+    "description": "Shortcut description for saving window"
+  },
+  "cmdOpenBoard": {
+    "message": "Open Minimal Board Tab",
+    "description": "Shortcut description for opening board"
+  }
+}
