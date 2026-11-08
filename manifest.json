@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Minimal Board Tab",
+  "name": "__MSG_extensionName__",
   "version": "0.2.0",
-  "description": "Keyboard-first visual bookmark & tab manager. Fast, calm, local-first.",
+  "default_locale": "en",
+  "description": "__MSG_extensionDescription__",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -10,7 +11,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Minimal Board Tab",
+    "default_title": "__MSG_extensionName__",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -50,21 +51,21 @@
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "Quick save active tab to Inbox"
+      "description": "__MSG_cmdQuickSave__"
     },
     "save-window": {
       "suggested_key": {
         "default": "Alt+Shift+A",
         "mac": "Alt+Shift+A"
       },
-      "description": "Save current window tabs as a session column"
+      "description": "__MSG_cmdSaveWindow__"
     },
     "open-board": {
       "suggested_key": {
         "default": "Alt+Shift+B",
         "mac": "Alt+Shift+B"
       },
-      "description": "Open Minimal Board Tab"
+      "description": "__MSG_cmdOpenBoard__"
     }
   }
 }
