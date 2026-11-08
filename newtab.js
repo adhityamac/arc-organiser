@@ -112,28 +112,21 @@ function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
 }
 
-function applyViewMode(mode) {
-  boardContainer.classList.remove('view-mode-list', 'view-mode-kanban', 'view-mode-bento');
-  const railTooltip = railViewModeBtn?.querySelector('.rail-tooltip');
-
-  if (mode === 'list') {
-    boardContainer.classList.add('view-mode-list');
-    if (railTooltip) railTooltip.textContent = 'View: List';
-  } else if (mode === 'kanban') {
-    boardContainer.classList.add('view-mode-kanban');
-    if (railTooltip) railTooltip.textContent = 'View: Kanban';
-  } else {
-    // Default: Bento / Masonry Grid
+function applyViewMode() {
+  if (boardContainer) {
+    boardContainer.classList.remove('view-mode-list', 'view-mode-kanban');
     boardContainer.classList.add('view-mode-bento');
-    if (railTooltip) railTooltip.textContent = 'View: Bento Grid';
   }
+  const railTooltip = railViewModeBtn?.querySelector('.rail-tooltip');
+  if (railTooltip) railTooltip.textContent = 'Bento Grid';
 }
+applyViewMode();
 
 async function applyWallpaper(settings, activeWs) {
   if (!wallpaperLayer) return;
 
   const isWsOverridden = Boolean(activeWs?.wallpaper);
-  const wp = isWsOverridden ? activeWs.wallpaper : (settings?.wallpaper || 'preset:mountain');
+  const wp = isWsOverridden ? activeWs.wallpaper : (settings?.wallpaper || 'none');
   const dim = isWsOverridden
     ? (activeWs.wallpaperDim ?? 15)
     : (settings?.wallpaperDim ?? (wp === 'preset:forest' ? 15 : 10));
@@ -224,14 +217,6 @@ async function applyWallpaper(settings, activeWs) {
 
   if (wp === 'none') {
     wallpaperLayer.style.backgroundImage = 'none';
-  } else if (wp === 'preset:mountain') {
-    wallpaperLayer.style.backgroundImage = `url('wallpapers/mountain.svg')`;
-  } else if (wp === 'preset:forest') {
-    wallpaperLayer.style.backgroundImage = `url('wallpapers/forest.svg')`;
-  } else if (wp === 'preset:inkwash') {
-    wallpaperLayer.style.backgroundImage = `url('wallpapers/inkwash.svg')`;
-  } else if (wp === 'preset:monochrome') {
-    wallpaperLayer.style.backgroundImage = `url('wallpapers/monochrome.svg')`;
   } else if (wp && wp.startsWith('preset:')) {
     const file = wp.replace('preset:', '');
     wallpaperLayer.style.backgroundImage = `url('wallpapers/${file}.svg')`;
@@ -461,13 +446,7 @@ if (floatingMenuBtn && quickMenuPopover) {
     quickMenuPopover.style.display = 'none';
     triggerWallpaperModal();
   });
-
-  document.getElementById('menu-wallpaper-mountain')?.addEventListener('click', () => setWallpaperPreset('preset:mountain'));
-  document.getElementById('menu-wallpaper-forest')?.addEventListener('click', () => setWallpaperPreset('preset:forest'));
-  document.getElementById('menu-wallpaper-inkwash')?.addEventListener('click', () => setWallpaperPreset('preset:inkwash'));
-  document.getElementById('menu-wallpaper-monochrome')?.addEventListener('click', () => setWallpaperPreset('preset:monochrome'));
-
-  document.getElementById('menu-import-bookmarks')?.addEventListener('click', async () => {
+document.getElementById('menu-import-bookmarks')?.addEventListener('click', async () => {
     quickMenuPopover.style.display = 'none';
     if (!chrome.bookmarks?.getTree) {
       showToast('Chrome bookmarks API unavailable');
@@ -612,20 +591,9 @@ if (railAddColumnBtn) {
 }
 
 if (railViewModeBtn) {
-  railViewModeBtn.addEventListener('click', async () => {
-    currentMeta.settings = currentMeta.settings || {};
-    const modes = ['bento', 'kanban', 'list'];
-    const current = currentMeta.settings.viewMode || 'bento';
-    const currentIdx = modes.indexOf(current);
-    const nextMode = modes[(currentIdx + 1) % modes.length];
-
-    currentMeta.settings.viewMode = nextMode;
-    applyViewMode(nextMode);
-    railViewModeBtn.classList.toggle('active', nextMode !== 'bento');
-    await chrome.storage.local.set({ meta: currentMeta });
-
-    const names = { bento: 'Bento / Masonry Grid', kanban: 'Horizontal Kanban', list: 'List View' };
-    showToast(`View mode: ${names[nextMode]}`);
+  railViewModeBtn.addEventListener('click', () => {
+    applyViewMode();
+    showToast('Bento Grid Layout (Active)');
   });
 }
 
@@ -1159,6 +1127,80 @@ function createCardElement(card, workspaceId) {
     ]);
   });
 
+  // Universal Card Resize Handle (Allows free-form vertical expansion)
+  const cardResizeHandle = document.createElement('div');
+  cardResizeHandle.className = 'card-resize-handle';
+  cardResizeHandle.title = 'Drag to resize card height (Double-click to reset)';
+  cardResizeHandle.setAttribute('aria-label', 'Resize card');
+  cardResizeHandle.innerHTML = `
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+      <path d="M7 1L1 7M7 4L4 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+  `;
+
+  // Restore saved card size if any
+  try {
+    const savedCardHeight = localStorage.getItem(`arc_card_height_${card.id}`);
+    if (savedCardHeight) {
+      cardEl.style.minHeight = `${savedCardHeight}px`;
+      if (parseInt(savedCardHeight, 10) > 55) {
+        cardEl.classList.add('card-expanded');
+      }
+    }
+  } catch {}
+
+  // Pointer drag resizing for card
+  cardResizeHandle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startY = e.clientY;
+    const startHeight = cardEl.offsetHeight;
+
+    cardResizeHandle.setPointerCapture(e.pointerId);
+    cardEl.classList.add('is-resizing');
+
+    function onPointerMove(moveEvent) {
+      const deltaY = moveEvent.clientY - startY;
+      const newHeight = Math.max(38, Math.min(360, startHeight + deltaY));
+      cardEl.style.minHeight = `${newHeight}px`;
+      if (newHeight > 55) {
+        cardEl.classList.add('card-expanded');
+      } else {
+        cardEl.classList.remove('card-expanded');
+      }
+    }
+
+    function onPointerUp(upEvent) {
+      try {
+        cardResizeHandle.releasePointerCapture(upEvent.pointerId);
+      } catch {}
+      cardEl.classList.remove('is-resizing');
+      cardResizeHandle.removeEventListener('pointermove', onPointerMove);
+      cardResizeHandle.removeEventListener('pointerup', onPointerUp);
+
+      try {
+        localStorage.setItem(`arc_card_height_${card.id}`, String(cardEl.offsetHeight));
+      } catch {}
+    }
+
+    cardResizeHandle.addEventListener('pointermove', onPointerMove);
+    cardResizeHandle.addEventListener('pointerup', onPointerUp);
+  });
+
+  // Double click to reset card size
+  cardResizeHandle.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    cardEl.style.minHeight = '';
+    cardEl.classList.remove('card-expanded');
+    try {
+      localStorage.removeItem(`arc_card_height_${card.id}`);
+    } catch {}
+    showToast('Card size reset');
+  });
+
+  cardEl.appendChild(cardResizeHandle);
+
   return cardEl;
 }
 
@@ -1431,34 +1473,108 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   });
 
   colEl.appendChild(inlineAddRow);
+
+  // Universal Column Resize Grip (Allows free-form vertical resizing & 2x column span)
+  const colResizeHandle = document.createElement('div');
+  colResizeHandle.className = 'col-resize-handle';
+  colResizeHandle.title = 'Drag to resize column (Double-click to reset)';
+  colResizeHandle.setAttribute('aria-label', 'Resize column');
+  colResizeHandle.innerHTML = `
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <path d="M8 2L2 8M9 5L5 9M9 8L8 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+  `;
+
+  // Restore saved column dimensions if any
+  try {
+    const savedColHeight = localStorage.getItem(`arc_col_height_${col.id}`);
+    const savedColSpan = localStorage.getItem(`arc_col_span_${col.id}`);
+    if (savedColHeight) {
+      colEl.style.height = `${savedColHeight}px`;
+      colEl.style.maxHeight = `${savedColHeight}px`;
+    }
+    if (savedColSpan === '2') {
+      colEl.classList.add('bento-span-2');
+    }
+  } catch {}
+
+  // Pointer drag resizing for column
+  colResizeHandle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startY = e.clientY;
+    const startX = e.clientX;
+    const startHeight = colEl.offsetHeight;
+
+    colResizeHandle.setPointerCapture(e.pointerId);
+    colEl.classList.add('is-resizing');
+
+    function onPointerMove(moveEvent) {
+      const deltaY = moveEvent.clientY - startY;
+      const deltaX = moveEvent.clientX - startX;
+
+      const newHeight = Math.max(120, Math.min(900, startHeight + deltaY));
+      colEl.style.height = `${newHeight}px`;
+      colEl.style.maxHeight = `${newHeight}px`;
+
+      // Expand to 2x bento span if dragged significantly right
+      if (deltaX > 140) {
+        colEl.classList.add('bento-span-2');
+      } else if (deltaX < -80) {
+        colEl.classList.remove('bento-span-2');
+      }
+    }
+
+    function onPointerUp(upEvent) {
+      try {
+        colResizeHandle.releasePointerCapture(upEvent.pointerId);
+      } catch {}
+      colEl.classList.remove('is-resizing');
+      colResizeHandle.removeEventListener('pointermove', onPointerMove);
+      colResizeHandle.removeEventListener('pointerup', onPointerUp);
+
+      try {
+        localStorage.setItem(`arc_col_height_${col.id}`, String(colEl.offsetHeight));
+        if (colEl.classList.contains('bento-span-2')) {
+          localStorage.setItem(`arc_col_span_${col.id}`, '2');
+        } else {
+          localStorage.removeItem(`arc_col_span_${col.id}`);
+        }
+      } catch {}
+    }
+
+    colResizeHandle.addEventListener('pointermove', onPointerMove);
+    colResizeHandle.addEventListener('pointerup', onPointerUp);
+  });
+
+  // Double click to reset column size
+  colResizeHandle.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    colEl.style.height = '';
+    colEl.style.maxHeight = '';
+    colEl.classList.remove('bento-span-2');
+    try {
+      localStorage.removeItem(`arc_col_height_${col.id}`);
+      localStorage.removeItem(`arc_col_span_${col.id}`);
+    } catch {}
+    showToast('Column size reset');
+  });
+
+  colEl.appendChild(colResizeHandle);
+
   return colEl;
 }
 
 /**
  * Synchronizes the left navigation rail button and badge states.
  */
-function syncRailState(layout = currentLayout) {
+function syncRailState() {
   if (railViewModeBtn) {
-    const currentMode = currentMeta?.settings?.viewMode || 'bento';
-    railViewModeBtn.classList.toggle('active', currentMode !== 'bento');
+    railViewModeBtn.classList.add('active');
     const railTooltip = railViewModeBtn.querySelector('.rail-tooltip');
     if (railTooltip) {
-      if (currentMode === 'bento') railTooltip.textContent = 'View: Bento Grid';
-      else if (currentMode === 'kanban') railTooltip.textContent = 'View: Kanban';
-      else railTooltip.textContent = 'View: List';
-    }
-  }
-  if (railTriageBadge) {
-    const inboxCol =
-      Object.values(layout?.columns || {}).find(
-        (c) => c.system === 'inbox' || c.id === 'col_inbox' || c.title?.toLowerCase() === 'inbox'
-      ) || layout?.columns?.col_inbox;
-    const count = inboxCol?.cardIds?.length || 0;
-    if (count > 0) {
-      railTriageBadge.style.display = '';
-      railTriageBadge.textContent = count > 99 ? '99+' : String(count);
-    } else {
-      railTriageBadge.style.display = 'none';
+      railTooltip.textContent = 'Bento Grid';
     }
   }
 }

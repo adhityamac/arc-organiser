@@ -2461,60 +2461,94 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   List View Mode (FR-2.7)
+   Universal Bento Resizing System (Columns & Cards)
    -------------------------------------------------------------------------- */
-.board-container.view-mode-list {
+.column {
+  position: relative;
+  transition: border-color 160ms var(--ease-spring), box-shadow 160ms var(--ease-spring);
+}
+
+/* Bento Multi-Span Columns */
+.column.bento-span-2 {
+  column-span: all;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Column Resize Grip */
+.col-resize-handle {
+  position: absolute;
+  bottom: 3px;
+  right: 5px;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  color: var(--text-muted);
+  opacity: 0.3;
+  transition: opacity 140ms ease, transform 140ms var(--ease-spring), color 140ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  z-index: 10;
+  touch-action: none;
+}
+.column:hover .col-resize-handle,
+.column.is-resizing .col-resize-handle {
+  opacity: 0.95;
+  transform: scale(1.15);
+  color: var(--accent-primary);
+}
+
+/* Card Resize Grip */
+.card {
+  position: relative;
+}
+
+.card-resize-handle {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  cursor: s-resize;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 140ms ease, transform 140ms var(--ease-spring), color 140ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  z-index: 10;
+  touch-action: none;
+}
+.card:hover .card-resize-handle,
+.card.is-resizing .card-resize-handle {
+  opacity: 0.85;
+  color: var(--accent-primary);
+}
+
+.column.is-resizing,
+.card.is-resizing {
+  user-select: none !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 2px var(--accent-primary-glow), var(--shadow-card-hover) !important;
+}
+
+/* Expanded Card Mode */
+.card.card-expanded {
+  padding-bottom: 18px;
+}
+.card.card-expanded .card-content {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
-  gap: 20px;
-  padding: 20px 32px;
+  gap: 4px;
 }
-
-.board-container.view-mode-list .column {
-  width: 100%;
-  min-width: 100%;
-  max-width: 100%;
-  height: auto;
-}
-
-.board-container.view-mode-list .cards-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 10px;
-}
-
-/* --------------------------------------------------------------------------
-   Horizontal Kanban Mode (Optional via Switch View)
-   -------------------------------------------------------------------------- */
-.board-container.view-mode-kanban {
-  display: flex;
-  flex-direction: row;
-  columns: auto;
-  column-gap: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  gap: 18px;
-  scroll-snap-type: x proximity;
-  height: 100%;
-}
-
-.board-container.view-mode-kanban .column {
-  width: 280px;
-  min-width: 280px;
-  max-width: 280px;
-  height: 100%;
-  max-height: 100%;
-  margin-bottom: 0;
-  display: flex;
-  flex-direction: column;
-  scroll-snap-align: start;
-}
-
-.board-container.view-mode-kanban .cards-list {
-  flex: 1;
-  max-height: none;
+.card.card-expanded .card-host {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  word-break: break-all;
 }
 
 /* --------------------------------------------------------------------------

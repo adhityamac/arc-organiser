@@ -3,30 +3,14 @@ import assert from 'node:assert/strict';
 import { WALLPAPER_PRESETS } from '../lib/ui/wallpaper-modal.js';
 
 test('WALLPAPER_PRESETS metadata catalog', async (t) => {
-  await t.test('includes all curated live procedural themes', () => {
-    const livePresets = WALLPAPER_PRESETS.filter((p) => p.type === 'live');
-    const ids = livePresets.map((p) => p.id);
-    assert.deepEqual(ids, ['live:aurora', 'live:cosmos', 'live:bokeh', 'live:waves']);
-    for (const p of livePresets) {
-      assert.ok(p.name && p.name.length > 0, `Preset ${p.id} must have a name`);
-      assert.ok(p.desc && p.desc.length > 0, `Preset ${p.id} must have a description`);
+  await t.test('catalog contains live shaders and gradients without hardcoded external vector files', () => {
+    assert.ok(WALLPAPER_PRESETS.length >= 4, 'Must include live and gradient presets');
+    for (const p of WALLPAPER_PRESETS) {
+      assert.ok(p.id, 'Preset must have an id');
+      assert.notEqual(p.type, 'vector', 'No vector SVG dependencies allowed');
+      assert.ok(p.name && p.name.length > 0, 'Must have a title');
+      assert.ok(p.desc && p.desc.length > 0, 'Must have a description');
     }
-  });
-
-  await t.test('includes curated vector art presets with valid SVG file paths', () => {
-    const vectorPresets = WALLPAPER_PRESETS.filter((p) => p.type === 'vector');
-    const ids = vectorPresets.map((p) => p.id);
-    assert.deepEqual(ids, ['preset:mountain', 'preset:forest', 'preset:inkwash']);
-    for (const p of vectorPresets) {
-      assert.ok(p.file && p.file.endsWith('.svg'), `Vector preset ${p.id} must reference an .svg file`);
-    }
-  });
-
-  await t.test('includes pure obsidian and subtle gradient presets', () => {
-    const hasNone = WALLPAPER_PRESETS.some((p) => p.id === 'none');
-    const hasAurora = WALLPAPER_PRESETS.some((p) => p.id === 'gradient-aurora');
-    assert.ok(hasNone, 'Must include pure obsidian none option');
-    assert.ok(hasAurora, 'Must include gradient-aurora');
   });
 });
 

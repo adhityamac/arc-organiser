@@ -15,27 +15,9 @@ test('Zen Widgets & Markmez Configuration', async (t) => {
       'calendar',
     ]);
     assert.equal(meta.settings.accent, '#536b44');
-    assert.equal(meta.settings.wallpaper, 'preset:mountain');
-    assert.equal(meta.settings.wallpaperDim, 15);
+    assert.equal(meta.settings.wallpaper, 'none');
+    assert.equal(meta.settings.wallpaperDim, 0);
   });
-
-  await t.test('all 3 curated SVG nature wallpapers exist and contain valid SVG markup', () => {
-    const cwd = process.cwd();
-    const files = [
-      'wallpapers/mountain.svg',
-      'wallpapers/forest.svg',
-      'wallpapers/inkwash.svg',
-    ];
-
-    for (const relPath of files) {
-      const fullPath = path.join(cwd, relPath);
-      assert.ok(fs.existsSync(fullPath), `File ${relPath} must exist`);
-      const content = fs.readFileSync(fullPath, 'utf8');
-      assert.ok(content.startsWith('<svg'), `File ${relPath} must begin with <svg`);
-      assert.ok(content.includes('</svg>'), `File ${relPath} must contain </svg>`);
-    }
-  });
-
   await t.test('settings update transaction mutator properly persists meta changes', async () => {
     const mockStorage = {
       meta: createDefaultMeta(),
