@@ -222,59 +222,106 @@ async function applyWallpaper(settings, activeWs) {
   // 5. Static Wallpapers & SVG Presets
   unmountLiveWallpaper();
 
-  if (!wp || wp === 'none') {
+  if (wp === 'none') {
     wallpaperLayer.style.backgroundImage = 'none';
   } else if (wp === 'preset:mountain') {
     wallpaperLayer.style.backgroundImage = `url('wallpapers/mountain.svg')`;
-    wallpaperLayer.style.backgroundSize = 'cover';
-    wallpaperLayer.style.backgroundPosition = 'center';
   } else if (wp === 'preset:forest') {
     wallpaperLayer.style.backgroundImage = `url('wallpapers/forest.svg')`;
-    wallpaperLayer.style.backgroundSize = 'cover';
-    wallpaperLayer.style.backgroundPosition = 'center';
   } else if (wp === 'preset:inkwash') {
     wallpaperLayer.style.backgroundImage = `url('wallpapers/inkwash.svg')`;
-    wallpaperLayer.style.backgroundSize = 'cover';
-    wallpaperLayer.style.backgroundPosition = 'center';
-  } else if (wp.startsWith('gradient:')) {
-    const gradients = {
-      'gradient:aurora': 'radial-gradient(at 15% 20%, rgba(99, 102, 241, 0.45) 0px, transparent 55%), radial-gradient(at 85% 15%, rgba(236, 72, 153, 0.4) 0px, transparent 55%), radial-gradient(at 50% 90%, rgba(14, 165, 233, 0.35) 0px, transparent 60%), radial-gradient(at 80% 80%, rgba(168, 85, 247, 0.38) 0px, transparent 50%), radial-gradient(at 20% 80%, rgba(16, 185, 129, 0.3) 0px, transparent 50%), linear-gradient(180deg, #0b0f19 0%, #05070d 100%)',
-      'gradient:mist': 'radial-gradient(at 80% 25%, rgba(148, 163, 184, 0.35) 0px, transparent 50%), radial-gradient(at 20% 80%, rgba(203, 213, 225, 0.25) 0px, transparent 55%), linear-gradient(180deg, #181d28 0%, #0e121a 100%)',
-      'gradient:clouds': 'radial-gradient(at 85% 30%, rgba(254, 215, 170, 0.45) 0px, transparent 50%), radial-gradient(at 20% 60%, rgba(186, 230, 253, 0.5) 0px, transparent 60%), linear-gradient(180deg, #38bdf8 0%, #818cf8 50%, #f472b6 100%)',
-      'gradient:sunset': 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #701a75 100%)',
-      'gradient:space': 'linear-gradient(135deg, #09090b 0%, #172554 50%, #030712 100%)',
-      'gradient:nordic': 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-      'gradient:violet': 'linear-gradient(135deg, #2e1065 0%, #3b0764 50%, #0f172a 100%)',
-    };
-    wallpaperLayer.style.backgroundImage = gradients[wp] || 'none';
-  } else if (wp.startsWith('gradient-')) {
-    const gradients = {
-      'gradient-aurora': 'radial-gradient(circle at 20% 20%, #1e1b4b 0%, #0f172a 50%, #020617 100%)',
-      'gradient-dusk': 'linear-gradient(135deg, #2e1065 0%, #172554 50%, #020617 100%)',
-      'gradient-forest': 'radial-gradient(circle at 80% 20%, #064e3b 0%, #0f172a 60%, #020617 100%)',
-      'gradient-editorial': 'linear-gradient(180deg, #fdfbf7 0%, #f1efe7 100%)',
-    };
-    wallpaperLayer.style.backgroundImage = gradients[wp] || 'none';
+  } else if (wp === 'preset:monochrome') {
+    wallpaperLayer.style.backgroundImage = `url('wallpapers/monochrome.svg')`;
+  } else if (wp && wp.startsWith('preset:')) {
+    const file = wp.replace('preset:', '');
+    wallpaperLayer.style.backgroundImage = `url('wallpapers/${file}.svg')`;
+  } else {
+    wallpaperLayer.style.backgroundImage = `url('wallpapers/monochrome.svg')`;
+  }
+  wallpaperLayer.style.backgroundSize = 'cover';
+  wallpaperLayer.style.backgroundPosition = 'center';
+}
+
+// Search Bar Interactions & Toggleable Mode (Web vs Cards)
+let currentSearchMode = 'web';
+const searchModeWebBtn = document.getElementById('search-mode-web');
+const searchModeCardsBtn = document.getElementById('search-mode-cards');
+
+function setSearchMode(mode) {
+  currentSearchMode = mode;
+  if (mode === 'web') {
+    searchModeWebBtn?.classList.add('active');
+    searchModeWebBtn?.setAttribute('aria-pressed', 'true');
+    searchModeCardsBtn?.classList.remove('active');
+    searchModeCardsBtn?.setAttribute('aria-pressed', 'false');
+    if (mainSearchInput) mainSearchInput.placeholder = 'Search Google or press Tab for cards...';
+    clearCardFilter();
+  } else {
+    searchModeCardsBtn?.classList.add('active');
+    searchModeCardsBtn?.setAttribute('aria-pressed', 'true');
+    searchModeWebBtn?.classList.remove('active');
+    searchModeWebBtn?.setAttribute('aria-pressed', 'false');
+    if (mainSearchInput) mainSearchInput.placeholder = 'Filter saved cards...';
+    applyCardFilter(mainSearchInput?.value || '');
   }
 }
 
-// Search Bar Interactions
+searchModeWebBtn?.addEventListener('click', () => setSearchMode('web'));
+searchModeCardsBtn?.addEventListener('click', () => setSearchMode('cards'));
+
+function applyCardFilter(query) {
+  const q = (query || '').toLowerCase().trim();
+  const allCardEls = document.querySelectorAll('.board-container .card');
+  for (const cardEl of allCardEls) {
+    if (!q) {
+      cardEl.style.display = '';
+      cardEl.style.opacity = '';
+      continue;
+    }
+    const title = cardEl.querySelector('.card-title')?.textContent?.toLowerCase() || '';
+    const match = title.includes(q);
+    cardEl.style.display = match ? '' : 'none';
+  }
+}
+
+function clearCardFilter() {
+  const allCardEls = document.querySelectorAll('.board-container .card');
+  for (const cardEl of allCardEls) {
+    cardEl.style.display = '';
+    cardEl.style.opacity = '';
+  }
+}
+
 function handleSearchAction(query) {
   if (!query || !query.trim()) return;
   const q = query.trim();
+
+  if (currentSearchMode === 'cards') {
+    // If in Cards mode, open first visible match or palette
+    const firstMatch = document.querySelector('.board-container .card:not([style*="display: none"])');
+    if (firstMatch) {
+      firstMatch.click();
+    } else {
+      triggerSearchPalette();
+    }
+    return;
+  }
 
   // If looks like URL
   if (/^https?:\/\//i.test(q) || (q.includes('.') && !q.includes(' '))) {
     window.location.href = q.startsWith('http') ? q : `https://${q}`;
   } else {
-    // Navigate via Google search or open internal palette
+    // Navigate via Google search
     window.location.href = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
   }
 }
 
 if (mainSearchInput) {
   mainSearchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setSearchMode(currentSearchMode === 'web' ? 'cards' : 'web');
+    } else if (e.key === 'Enter') {
       handleSearchAction(mainSearchInput.value);
     } else if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -282,8 +329,10 @@ if (mainSearchInput) {
     }
   });
 
-  mainSearchInput.addEventListener('click', () => {
-    // Focus search input
+  mainSearchInput.addEventListener('input', () => {
+    if (currentSearchMode === 'cards') {
+      applyCardFilter(mainSearchInput.value);
+    }
   });
 }
 
@@ -416,6 +465,43 @@ if (floatingMenuBtn && quickMenuPopover) {
   document.getElementById('menu-wallpaper-mountain')?.addEventListener('click', () => setWallpaperPreset('preset:mountain'));
   document.getElementById('menu-wallpaper-forest')?.addEventListener('click', () => setWallpaperPreset('preset:forest'));
   document.getElementById('menu-wallpaper-inkwash')?.addEventListener('click', () => setWallpaperPreset('preset:inkwash'));
+  document.getElementById('menu-wallpaper-monochrome')?.addEventListener('click', () => setWallpaperPreset('preset:monochrome'));
+
+  document.getElementById('menu-import-bookmarks')?.addEventListener('click', async () => {
+    quickMenuPopover.style.display = 'none';
+    if (!chrome.bookmarks?.getTree) {
+      showToast('Chrome bookmarks API unavailable');
+      return;
+    }
+    showToast('Importing bookmarks...');
+    try {
+      const tree = await chrome.bookmarks.getTree();
+      // Import into current workspace
+      const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
+      let importedCount = 0;
+      function walk(nodes) {
+        for (const n of nodes) {
+          if (n.url && !n.url.startsWith('chrome://')) {
+            saveCard({
+              title: n.title || 'Bookmark',
+              url: n.url,
+              workspaceId: activeWsId,
+            });
+            importedCount++;
+          }
+          if (n.children) walk(n.children);
+        }
+      }
+      walk(tree);
+      setTimeout(() => {
+        loadAndRender();
+        showToast(`Imported ${importedCount} bookmarks into Inbox`);
+      }, 300);
+    } catch (e) {
+      console.warn('Import failed', e);
+      showToast('Could not import bookmarks');
+    }
+  });
 
   document.getElementById('menu-restore-starter')?.addEventListener('click', async () => {
     quickMenuPopover.style.display = 'none';
@@ -658,12 +744,121 @@ function showToast(message, showUndo = false, durationMs = 4000) {
   }, durationMs);
 }
 
+// ==========================================================================
+// macOS Sequoia / Sonoma Frosted Context Menu Engine
+// ==========================================================================
+let activeContextMenu = null;
+
+function hideMacOsContextMenu() {
+  const menu = document.getElementById('macos-context-menu');
+  if (menu) {
+    menu.style.display = 'none';
+    menu.innerHTML = '';
+  }
+  activeContextMenu = null;
+}
+
+function showMacOsContextMenu(x, y, items) {
+  const menu = document.getElementById('macos-context-menu');
+  if (!menu) return;
+  menu.innerHTML = '';
+
+  items.forEach((item) => {
+    if (item.type === 'separator') {
+      const sep = document.createElement('div');
+      sep.className = 'macos-menu-separator';
+      menu.appendChild(sep);
+      return;
+    }
+
+    const btn = document.createElement('button');
+    btn.className = `macos-menu-item ${item.danger ? 'danger' : ''}`;
+    btn.setAttribute('role', 'menuitem');
+
+    const left = document.createElement('div');
+    left.className = 'macos-menu-item-left';
+
+    if (item.icon) {
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'macos-menu-icon';
+      iconSpan.textContent = item.icon;
+      left.appendChild(iconSpan);
+    }
+
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = item.label;
+    left.appendChild(labelSpan);
+    btn.appendChild(left);
+
+    if (item.shortcut) {
+      const kbd = document.createElement('kbd');
+      kbd.className = 'macos-menu-kbd';
+      kbd.textContent = item.shortcut;
+      btn.appendChild(kbd);
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideMacOsContextMenu();
+      if (typeof item.onClick === 'function') {
+        item.onClick();
+      }
+    });
+
+    menu.appendChild(btn);
+  });
+
+  menu.style.display = 'flex';
+  menu.style.visibility = 'hidden';
+
+  // Clamp within viewport
+  const rect = menu.getBoundingClientRect();
+  const pad = 12;
+  let posX = x;
+  let posY = y;
+
+  if (posX + rect.width > window.innerWidth - pad) {
+    posX = Math.max(pad, window.innerWidth - rect.width - pad);
+  }
+  if (posY + rect.height > window.innerHeight - pad) {
+    posY = Math.max(pad, window.innerHeight - rect.height - pad);
+  }
+
+  menu.style.left = `${posX}px`;
+  menu.style.top = `${posY}px`;
+  menu.style.visibility = 'visible';
+
+  activeContextMenu = menu;
+}
+
+// Global click & Escape handlers to dismiss context menu
+document.addEventListener('click', (e) => {
+  if (activeContextMenu && !activeContextMenu.contains(e.target)) {
+    hideMacOsContextMenu();
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && activeContextMenu) {
+    hideMacOsContextMenu();
+  }
+});
+window.addEventListener('scroll', hideMacOsContextMenu, true);
+window.addEventListener('blur', hideMacOsContextMenu);
+
 /**
- * Renders the top workspace switcher pills (Home, Projects, +)
+ * Renders the top workspace switcher pills (Home, Projects, +) with Apple sliding spring pill
  */
 function renderWorkspaceTabs(meta) {
   if (!workspaceSwitcher) return;
   workspaceSwitcher.innerHTML = '';
+
+  // 1. Sliding Spring Pill (Apple Segmented Indicator)
+  const sliderPill = document.createElement('div');
+  sliderPill.className = 'ws-slider-pill';
+  sliderPill.id = 'ws-slider-pill';
+  sliderPill.setAttribute('aria-hidden', 'true');
+  workspaceSwitcher.appendChild(sliderPill);
+
   let workspaces = meta?.workspaces;
   let didUpdate = false;
   if (!workspaces || workspaces.length === 0) {
@@ -741,6 +936,21 @@ function renderWorkspaceTabs(meta) {
     loadAndRender();
   });
   workspaceSwitcher.appendChild(addWsBtn);
+
+  // Position sliding pill with Apple spring physics
+  function updateSliderPill() {
+    const activeTab = workspaceSwitcher.querySelector('.ws-tab.active');
+    if (activeTab && sliderPill) {
+      sliderPill.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+      sliderPill.style.width = `${activeTab.offsetWidth}px`;
+      sliderPill.style.height = `${activeTab.offsetHeight}px`;
+      sliderPill.style.opacity = '1';
+    } else if (sliderPill) {
+      sliderPill.style.opacity = '0';
+    }
+  }
+  requestAnimationFrame(updateSliderPill);
+  window.addEventListener('resize', updateSliderPill, { passive: true });
 }
 
 /**
@@ -829,9 +1039,64 @@ function createCardElement(card, workspaceId) {
 
   cardEl.appendChild(actions);
 
+  // Direct Inline Edit on Double Click
+  const startInlineCardEdit = (e) => {
+    if (e) e.stopPropagation();
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'card-title-inline-edit';
+    input.value = card.title || '';
+    input.style.cssText = 'width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--accent-primary); border-radius: 6px; color: var(--text-primary); padding: 2px 6px; font-size: 12px; font-family: inherit; outline: none;';
+    titleSpan.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let committed = false;
+    const commit = async () => {
+      if (committed) return;
+      committed = true;
+      const newTitle = input.value.trim() || card.title || 'Untitled';
+      const cardsKey = `cards:${workspaceId}`;
+      await transaction([cardsKey], (shards) => {
+        const cMap = shards[cardsKey] || {};
+        if (cMap[card.id]) {
+          cMap[card.id].title = newTitle;
+        }
+        return { [cardsKey]: cMap };
+      });
+      loadAndRender();
+    };
+
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        commit();
+      } else if (ev.key === 'Escape') {
+        committed = true;
+        input.replaceWith(titleSpan);
+      }
+    });
+  };
+
+  cardEl.addEventListener('dblclick', startInlineCardEdit);
+
+  // Keyboard accessibility & quick actions (Delete, Backspace, E)
+  cardEl.addEventListener('keydown', async (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      await deleteCard(card.id, workspaceId);
+      showToast('Bookmark deleted', true, 4000);
+    } else if (e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+      startInlineCardEdit(e);
+    }
+  });
+
   // Card click navigation
   cardEl.addEventListener('click', (e) => {
-    if (e.target.closest('.card-action-btn')) return;
+    if (e.target.closest('.card-action-btn') || e.target.tagName === 'INPUT') return;
     if (card.url) {
       if (e.ctrlKey || e.metaKey || currentMeta?.settings?.openLinksInNewTab !== false) {
         window.open(card.url, '_blank', 'noopener,noreferrer');
@@ -839,6 +1104,59 @@ function createCardElement(card, workspaceId) {
         window.location.href = card.url;
       }
     }
+  });
+
+  // macOS Native-Style Frosted Context Menu on Right-Click (WWDC Section 12 & 16)
+  cardEl.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    showMacOsContextMenu(e.clientX, e.clientY, [
+      {
+        icon: '↗',
+        label: 'Open in New Tab',
+        shortcut: '⌘↵',
+        onClick: () => {
+          if (card.url) window.open(card.url, '_blank', 'noopener,noreferrer');
+        },
+      },
+      {
+        icon: '📋',
+        label: 'Copy URL',
+        shortcut: '⌘C',
+        onClick: () => {
+          if (card.url) {
+            navigator.clipboard.writeText(card.url);
+            showToast('URL copied to clipboard');
+          }
+        },
+      },
+      {
+        icon: '✏️',
+        label: 'Edit Bookmark...',
+        shortcut: 'E',
+        onClick: () => {
+          openCardEditModal({
+            card,
+            workspaceId,
+            layout: currentLayout,
+            meta: currentMeta,
+            onSave: loadAndRender,
+          });
+        },
+      },
+      { type: 'separator' },
+      {
+        icon: '🗑️',
+        label: 'Delete Bookmark',
+        shortcut: '⌫',
+        danger: true,
+        onClick: async () => {
+          await deleteCard(card.id, workspaceId);
+          showToast('Bookmark deleted', true, 4000);
+        },
+      },
+    ]);
   });
 
   return cardEl;
@@ -942,6 +1260,61 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   right.appendChild(colOptionsBtn);
 
   header.appendChild(right);
+
+  // macOS Native-Style Column Context Menu on Header Right-Click (WWDC Section 12 & 16)
+  header.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    showMacOsContextMenu(e.clientX, e.clientY, [
+      {
+        icon: '➕',
+        label: 'Add Link Here...',
+        shortcut: 'A',
+        onClick: () => {
+          openAddLinkModal({ workspaceId, columnId: col.id, onAdded: loadAndRender });
+        },
+      },
+      {
+        icon: '✏️',
+        label: 'Rename Column...',
+        shortcut: 'R',
+        onClick: startRename,
+      },
+      {
+        icon: '⚙️',
+        label: 'Column Options...',
+        onClick: () => {
+          openColumnSettingsModal({
+            col,
+            workspaceId,
+            layout: currentLayout,
+            onUpdate: loadAndRender,
+          });
+        },
+      },
+      { type: 'separator' },
+      {
+        icon: '🗑️',
+        label: 'Delete Column',
+        danger: true,
+        onClick: async () => {
+          if (!confirm(`Delete column "${col.title}" and its bookmarks?`)) return;
+          const wsKey = `ws:${workspaceId}`;
+          await transaction([wsKey], (shards) => {
+            const l = shards[wsKey];
+            if (!l) return {};
+            l.columnOrder = (l.columnOrder || []).filter((id) => id !== col.id);
+            delete l.columns[col.id];
+            return { [wsKey]: l };
+          });
+          loadAndRender();
+          showToast(`Column "${col.title}" deleted`);
+        },
+      },
+    ]);
+  });
+
   colEl.appendChild(header);
 
   // Cards List
@@ -964,6 +1337,100 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   }
 
   colEl.appendChild(list);
+
+  // Inline Ghost Row at bottom of list (+ Add bookmark)
+  const inlineAddRow = document.createElement('div');
+  inlineAddRow.className = 'inline-add-row';
+
+  const inlineAddBtn = document.createElement('button');
+  inlineAddBtn.className = 'inline-add-btn';
+  inlineAddBtn.type = 'button';
+  inlineAddBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span>Add bookmark</span>`;
+
+  const inlineAddForm = document.createElement('div');
+  inlineAddForm.className = 'inline-add-form';
+  inlineAddForm.style.display = 'none';
+
+  const inlineAddInput = document.createElement('input');
+  inlineAddInput.className = 'inline-add-input';
+  inlineAddInput.placeholder = 'Paste URL or name (e.g. github.com)...';
+
+  const inlineAddActions = document.createElement('div');
+  inlineAddActions.className = 'inline-add-actions';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'inline-add-cancel';
+  cancelBtn.textContent = 'Cancel';
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.type = 'button';
+  confirmBtn.className = 'inline-add-confirm';
+  confirmBtn.textContent = 'Add';
+
+  inlineAddActions.appendChild(cancelBtn);
+  inlineAddActions.appendChild(confirmBtn);
+  inlineAddForm.appendChild(inlineAddInput);
+  inlineAddForm.appendChild(inlineAddActions);
+
+  inlineAddRow.appendChild(inlineAddBtn);
+  inlineAddRow.appendChild(inlineAddForm);
+
+  const openInlineForm = () => {
+    inlineAddBtn.style.display = 'none';
+    inlineAddForm.style.display = 'flex';
+    inlineAddInput.value = '';
+    inlineAddInput.focus();
+  };
+
+  const closeInlineForm = () => {
+    inlineAddForm.style.display = 'none';
+    inlineAddBtn.style.display = 'flex';
+  };
+
+  const submitInlineForm = async () => {
+    const raw = inlineAddInput.value.trim();
+    if (!raw) {
+      closeInlineForm();
+      return;
+    }
+    let url = raw;
+    let title = raw;
+    if (!/^https?:\/\//i.test(url) && (url.includes('.') || !url.includes(' '))) {
+      url = `https://${url}`;
+    } else if (!/^https?:\/\//i.test(url)) {
+      url = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+    }
+    try {
+      const parsed = new URL(url);
+      if (title === raw && parsed.hostname) {
+        title = parsed.hostname.replace(/^www\./, '');
+      }
+    } catch {}
+
+    await saveCard({
+      title,
+      url,
+      columnId: col.id,
+      workspaceId,
+    });
+    showToast(`Saved to ${col.title} ↗`);
+    loadAndRender();
+  };
+
+  inlineAddBtn.addEventListener('click', openInlineForm);
+  cancelBtn.addEventListener('click', closeInlineForm);
+  confirmBtn.addEventListener('click', submitInlineForm);
+  inlineAddInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitInlineForm();
+    } else if (e.key === 'Escape') {
+      closeInlineForm();
+    }
+  });
+
+  colEl.appendChild(inlineAddRow);
   return colEl;
 }
 

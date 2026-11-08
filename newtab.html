@@ -60,12 +60,13 @@
       height: 100vh;
       overflow: hidden;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       user-select: none;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
     .sidebar-rail {
+      display: none;
       width: 62px;
       height: calc(100vh - 24px);
       margin: 12px 0 12px 14px;
@@ -90,7 +91,7 @@
     }
     #top-bar {
       height: 58px;
-      margin: 12px 20px 6px 12px;
+      margin: 14px 28px 6px 28px;
       border-radius: 9999px;
       background: var(--bg-surface);
       backdrop-filter: var(--glass-blur);
@@ -108,13 +109,15 @@
     }
     #board-container {
       flex: 1;
-      columns: 290px;
-      column-gap: 18px;
-      padding: 14px 24px 40px 16px;
+      columns: 280px;
+      column-gap: 20px;
+      padding: 16px 32px 56px 32px;
       overflow-y: auto;
       overflow-x: hidden;
       height: 100%;
       width: 100%;
+      max-width: 1680px;
+      margin: 0 auto;
     }
     .column-skeleton {
       width: 100%;
@@ -259,11 +262,11 @@
 
       <div class="top-center">
         <div id="search-bar-wrap" class="search-bar-wrap">
-          <svg class="search-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input type="text" id="main-search-input" class="main-search-input" placeholder="Search..." aria-label="Search saved links or Google">
+          <div class="search-mode-pill" id="search-mode-pill" role="radiogroup" aria-label="Search Mode">
+            <button type="button" class="search-mode-btn active" id="search-mode-web" data-mode="web" title="Search Google Web (Tab to switch)" aria-pressed="true">Web</button>
+            <button type="button" class="search-mode-btn" id="search-mode-cards" data-mode="cards" title="Search Saved Cards (Tab to switch)" aria-pressed="false">Cards</button>
+          </div>
+          <input type="text" id="main-search-input" class="main-search-input" placeholder="Search Google or press Tab for cards..." aria-label="Search Google or Saved Cards">
           <button id="google-search-btn" class="search-engine-btn" title="Search with Google" aria-label="Search with Google">
             <svg class="google-icon" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -324,10 +327,15 @@
     <button class="quick-menu-item" id="menu-wallpaper-mountain"><span class="menu-icon">🏔️</span> Misty Mountains</button>
     <button class="quick-menu-item" id="menu-wallpaper-forest"><span class="menu-icon">🌲</span> Deep Pine Forest</button>
     <button class="quick-menu-item" id="menu-wallpaper-inkwash"><span class="menu-icon">📜</span> Ink Landscape</button>
+    <button class="quick-menu-item" id="menu-wallpaper-monochrome"><span class="menu-icon">🖤</span> Monochrome Noir</button>
     <div class="menu-divider"></div>
+    <button class="quick-menu-item" id="menu-import-bookmarks"><span class="menu-icon">📥</span> Import Chrome Bookmarks</button>
     <button class="quick-menu-item" id="menu-restore-starter"><span class="menu-icon">🗂️</span> Reset to Markmez Categories</button>
     <button class="quick-menu-item" id="menu-settings"><span class="menu-icon">⚙️</span> All Settings & Backups</button>
   </div>
+
+  <!-- macOS Frosted Glass Context Menu -->
+  <div id="macos-context-menu" class="macos-context-menu" style="display: none;" role="menu" aria-label="Context Menu"></div>
 
   <!-- Toast Notification Area (Undo, Alerts) -->
   <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
