@@ -3,6 +3,7 @@
  */
 
 import { initStoreIfNeeded, transaction } from './lib/store.js';
+import { getEnabledWidgets } from './lib/ui/widgets.js';
 import {
   parseNetscapeBookmarks,
   validateBackupJson,
@@ -80,7 +81,7 @@ async function loadSettings() {
   if (wallpaperEcoMode) wallpaperEcoMode.checked = Boolean(settings.wallpaperEcoMode);
 
   // Widgets
-  const enabledWidgets = settings.widgets || ['clock', 'weather', 'focus-today', 'pomodoro', 'calendar'];
+  const enabledWidgets = getEnabledWidgets(settings);
   if (widgetWeatherEl) widgetWeatherEl.checked = enabledWidgets.includes('weather');
   if (widgetFocusTodayEl) widgetFocusTodayEl.checked = enabledWidgets.includes('focus-today');
   if (widgetClockEl) widgetClockEl.checked = enabledWidgets.includes('clock');
