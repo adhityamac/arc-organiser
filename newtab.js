@@ -9,6 +9,8 @@ import {
   undoLastAction,
   saveCard,
   transaction,
+  createDefaultMeta,
+  createDefaultWorkspaceLayout,
   CONTEXT_ID,
 } from './lib/store.js';
 import { initDragAndDrop, handleKeyboardReorder } from './lib/dnd.js';
@@ -271,6 +273,13 @@ if (googleSearchBtn) {
   });
 }
 
+const searchIconSvg = document.querySelector('.search-icon-svg');
+if (searchIconSvg) {
+  searchIconSvg.style.cursor = 'pointer';
+  searchIconSvg.setAttribute('title', 'Search saved bookmarks (Ctrl+K)');
+  searchIconSvg.addEventListener('click', triggerSearchPalette);
+}
+
 // Floating Circular Buttons (Bottom-Right)
 if (floatingSettingsBtn) {
   floatingSettingsBtn.addEventListener('click', () => {
@@ -466,11 +475,19 @@ function showToast(message, showUndo = false, durationMs = 4000) {
  * Renders the top workspace switcher pills (Home, Projects, +)
  */
 function renderWorkspaceTabs(meta) {
+  if (!workspaceSwitcher) return;
   workspaceSwitcher.innerHTML = '';
-  const workspaces = meta.workspaces || [];
+  let workspaces = meta?.workspaces;
+  if (!workspaces || workspaces.length === 0) {
+    workspaces = [
+      { id: 'ws_default', name: 'Home', icon: '🏠', order: 0 },
+      { id: 'ws_projects', name: 'Projects', icon: '💼', order: 1 },
+    ];
+    if (meta) meta.workspaces = workspaces;
+  }
 
   for (const ws of workspaces) {
-    const isActive = ws.id === meta.activeWorkspaceId;
+    const isActive = ws.id === (meta?.activeWorkspaceId || 'ws_default');
     const tabBtn = document.createElement('button');
     tabBtn.className = `ws-tab ${isActive ? 'active' : ''}`;
     tabBtn.dataset.wsId = ws.id;
@@ -479,13 +496,14 @@ function renderWorkspaceTabs(meta) {
     tabBtn.setAttribute('aria-label', `Workspace: ${ws.name}`);
 
     const name = document.createElement('span');
-    name.textContent = ws.name;
+    name.textContent = ws.name || 'Home';
     tabBtn.appendChild(name);
 
     tabBtn.addEventListener('click', async () => {
       if (ws.id === meta.activeWorkspaceId) return;
       meta.activeWorkspaceId = ws.id;
       await chrome.storage.local.set({ meta });
+      loadAndRender();
     });
 
     workspaceSwitcher.appendChild(tabBtn);
@@ -511,6 +529,7 @@ function renderWorkspaceTabs(meta) {
     });
     meta.activeWorkspaceId = newWsId;
     await chrome.storage.local.set({ meta });
+    loadAndRender();
   });
   workspaceSwitcher.appendChild(addWsBtn);
 }
@@ -772,44 +791,50 @@ function renderBoard(layout, cardsMap, workspaceId) {
  * Loads and renders the board from storage shards.
  */
 async function loadAndRender() {
-  await initStoreIfNeeded();
+  try {
+    await initStoreIfNeeded();
 
-  const metaShard = await new Promise((res) => chrome.storage.local.get('meta', res));
-  currentMeta = metaShard.meta;
-  const activeWsId = currentMeta.activeWorkspaceId || 'ws_default';
+    const metaShard = await new Promise((res) => chrome.storage.local.get('meta', res));
+    currentMeta = metaShard?.meta || createDefaultMeta();
+    const activeWsId = currentMeta.activeWorkspaceId || 'ws_default';
 
-  renderWorkspaceTabs(currentMeta);
+    renderWorkspaceTabs(currentMeta);
 
-  const wsShards = await new Promise((res) =>
-    chrome.storage.local.get([`ws:${activeWsId}`, `cards:${activeWsId}`], res)
-  );
+    const wsShards = await new Promise((res) =>
+      chrome.storage.local.get([`ws:${activeWsId}`, `cards:${activeWsId}`], res)
+    );
 
-  currentLayout = wsShards[`ws:${activeWsId}`];
-  currentCards = wsShards[`cards:${activeWsId}`] || {};
+    currentLayout = wsShards?.[`ws:${activeWsId}`];
+    if (!currentLayout || !currentLayout.columns || !currentLayout.columnOrder) {
+      currentLayout = createDefaultWorkspaceLayout(activeWsId);
+      await chrome.storage.local.set({ [`ws:${activeWsId}`]: currentLayout });
+    }
+    currentCards = wsShards?.[`cards:${activeWsId}`] || {};
 
-  applyTheme(currentMeta.settings?.theme || 'light');
-  applyViewMode(currentMeta.settings?.viewMode || 'board');
-  const activeWs = (currentMeta.workspaces || []).find((w) => w.id === activeWsId);
-  applyWallpaper(currentMeta.settings, activeWs);
+    applyTheme(currentMeta.settings?.theme || 'dark');
+    applyViewMode(currentMeta.settings?.viewMode || 'board');
+    const activeWs = (currentMeta.workspaces || []).find((w) => w.id === activeWsId);
+    applyWallpaper(currentMeta.settings, activeWs);
 
-  if (currentLayout) {
     renderBoard(currentLayout, currentCards, activeWsId);
-  }
 
-  // Mount Zen Top-Bar Widgets
-  if (topWidgetsContainer) {
-    mountTopBarWidgets(topWidgetsContainer, {
-      meta: currentMeta,
-      onSaveSettings: async (key, val) => {
-        currentMeta.settings = currentMeta.settings || {};
-        currentMeta.settings[key] = val;
-        await chrome.storage.local.set({ meta: currentMeta });
-      },
-    });
-  }
+    // Mount Zen Top-Bar Widgets
+    if (topWidgetsContainer) {
+      mountTopBarWidgets(topWidgetsContainer, {
+        meta: currentMeta,
+        onSaveSettings: async (key, val) => {
+          currentMeta.settings = currentMeta.settings || {};
+          currentMeta.settings[key] = val;
+          await chrome.storage.local.set({ meta: currentMeta });
+        },
+      });
+    }
 
-  performance.mark('mbt_init_end');
-  performance.measure('mbt_board_first_paint', 'mbt_init_start', 'mbt_init_end');
+    performance.mark('mbt_init_end');
+    performance.measure('mbt_board_first_paint', 'mbt_init_start', 'mbt_init_end');
+  } catch (err) {
+    console.error('Failed to load and render board:', err);
+  }
 }
 
 /**

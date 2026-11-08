@@ -120,7 +120,7 @@ async function saveSetting(key, value) {
   await transaction([], (shards, meta) => {
     meta.settings = meta.settings || {};
     meta.settings[key] = value;
-    return {};
+    return { meta };
   });
 }
 
@@ -218,8 +218,14 @@ wallpaperUploadInput.addEventListener('change', async (e) => {
 wallpaperDim.addEventListener('change', () =>
   saveSetting('wallpaperDim', parseInt(wallpaperDim.value, 10))
 );
+wallpaperDim.addEventListener('input', () =>
+  saveSetting('wallpaperDim', parseInt(wallpaperDim.value, 10))
+);
 
 wallpaperBlur.addEventListener('change', () =>
+  saveSetting('wallpaperBlur', parseInt(wallpaperBlur.value, 10))
+);
+wallpaperBlur.addEventListener('input', () =>
   saveSetting('wallpaperBlur', parseInt(wallpaperBlur.value, 10))
 );
 
@@ -329,7 +335,7 @@ function renderRules(rules) {
     delBtn.addEventListener('click', async () => {
       await transaction([], (shards, meta) => {
         meta.rules = (meta.rules || []).filter((r) => r.id !== rule.id);
-        return {};
+        return { meta };
       });
       loadSettings();
     });
@@ -368,7 +374,7 @@ addRuleBtn.addEventListener('click', async () => {
   await transaction([], (shards, meta) => {
     meta.rules = meta.rules || [];
     meta.rules.push(newRule);
-    return {};
+    return { meta };
   });
 
   loadSettings();

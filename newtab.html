@@ -7,44 +7,42 @@
   <style>
     /* Critical Inline CSS for sub-15ms First Paint */
     :root {
-      --bg-app: #07090e;
+      --bg-app: #0e1612;
       --bg-app-radial: 
-        radial-gradient(circle at 12% 18%, rgba(99, 102, 241, 0.4) 0%, transparent 45%),
-        radial-gradient(circle at 88% 22%, rgba(236, 72, 153, 0.35) 0%, transparent 48%),
-        radial-gradient(circle at 50% 82%, rgba(14, 165, 233, 0.32) 0%, transparent 52%),
-        radial-gradient(circle at 75% 75%, rgba(168, 85, 247, 0.3) 0%, transparent 45%),
-        linear-gradient(180deg, #0d111e 0%, #05060a 100%);
-      --bg-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 100%);
-      --bg-surface-solid: #12151f;
-      --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
-      --border-subtle: rgba(255, 255, 255, 0.22);
-      --border-card-hover: rgba(255, 255, 255, 0.6);
-      --accent-primary: #818cf8;
+        radial-gradient(circle at 18% 20%, rgba(83, 107, 68, 0.35) 0%, transparent 50%),
+        radial-gradient(circle at 82% 25%, rgba(45, 75, 55, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(20, 45, 30, 0.4) 0%, transparent 60%),
+        linear-gradient(180deg, #101813 0%, #080d0a 100%);
+      --bg-surface: rgba(20, 28, 24, 0.65);
+      --bg-surface-solid: #151d18;
+      --bg-card: rgba(24, 34, 29, 0.72);
+      --border-subtle: rgba(255, 255, 255, 0.16);
+      --border-card-hover: rgba(130, 210, 150, 0.45);
+      --accent-primary: #6b8a58;
       --accent-danger: #f43f5e;
       --accent-success: #10b981;
       --accent-warning: #f59e0b;
-      --text-primary: #ffffff;
-      --text-muted: #94a3b8;
+      --text-primary: #f0f5f1;
+      --text-muted: #9ab09d;
       --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --glass-blur: blur(28px) saturate(210%) contrast(105%) brightness(108%);
+      --glass-blur: blur(28px) saturate(180%);
       --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
     }
     :root[data-theme="light"] {
-      --bg-app: #e9edf5;
+      --bg-app: #eef2ed;
       --bg-app-radial: 
-        radial-gradient(circle at 12% 16%, rgba(199, 210, 254, 0.8) 0%, transparent 48%),
-        radial-gradient(circle at 88% 20%, rgba(254, 205, 211, 0.7) 0%, transparent 48%),
-        radial-gradient(circle at 50% 80%, rgba(186, 230, 253, 0.65) 0%, transparent 55%),
-        radial-gradient(circle at 75% 85%, rgba(243, 232, 255, 0.7) 0%, transparent 48%),
-        linear-gradient(180deg, #f2f5fb 0%, #e2e8f0 100%);
-      --bg-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.52) 100%);
+        radial-gradient(circle at 18% 18%, rgba(215, 230, 210, 0.75) 0%, transparent 50%),
+        radial-gradient(circle at 82% 22%, rgba(225, 238, 225, 0.7) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(210, 226, 212, 0.65) 0%, transparent 55%),
+        linear-gradient(180deg, #f4f7f3 0%, #e5ece3 100%);
+      --bg-surface: rgba(255, 255, 255, 0.72);
       --bg-surface-solid: #ffffff;
-      --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.72) 100%);
-      --border-subtle: rgba(255, 255, 255, 0.8);
-      --border-card-hover: #ffffff;
-      --accent-primary: #4f46e5;
-      --text-primary: #0f172a;
-      --text-muted: #64748b;
+      --bg-card: rgba(255, 255, 255, 0.78);
+      --border-subtle: rgba(255, 255, 255, 0.65);
+      --border-card-hover: rgba(255, 255, 255, 0.98);
+      --accent-primary: #536b44;
+      --text-primary: #192019;
+      --text-muted: #5e6b5c;
     }
     *, *::before, *::after {
       box-sizing: border-box;
