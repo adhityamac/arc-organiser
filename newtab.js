@@ -74,7 +74,13 @@ if (triageTriggerBtn) {
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   if (themeToggleBtn) {
-    themeToggleBtn.textContent = theme === 'light' ? '☀️' : '🌙';
+    if (theme === 'light') {
+      themeToggleBtn.innerHTML = `<svg class="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+      themeToggleBtn.title = 'Switch to Dark Theme';
+    } else {
+      themeToggleBtn.innerHTML = `<svg class="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+      themeToggleBtn.title = 'Switch to Light Theme';
+    }
   }
 }
 
@@ -92,10 +98,16 @@ if (themeToggleBtn) {
 function applyViewMode(mode) {
   if (mode === 'list') {
     boardContainer.classList.add('view-mode-list');
-    if (viewModeBtn) viewModeBtn.textContent = '🗂️';
+    if (viewModeBtn) {
+      viewModeBtn.innerHTML = `<svg class="view-mode-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
+      viewModeBtn.title = 'Switch to Board View';
+    }
   } else {
     boardContainer.classList.remove('view-mode-list');
-    if (viewModeBtn) viewModeBtn.textContent = '📋';
+    if (viewModeBtn) {
+      viewModeBtn.innerHTML = `<svg class="view-mode-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`;
+      viewModeBtn.title = 'Switch to List View';
+    }
   }
 }
 
@@ -154,14 +166,19 @@ if (drawerToggleBtn) {
 }
 
 /**
- * Creates an image or letter-tile fallback element for a card's favicon.
+ * Creates an image or letter-tile fallback element for a card's favicon,
+ * framed within an Apple/Linear style squircle badge.
  */
 function createFaviconElement(url, host) {
+  const wrap = document.createElement('div');
+  wrap.className = 'card-favicon-wrap';
+
   if (!url) {
     const tile = document.createElement('span');
     tile.className = 'card-tile-fallback';
     tile.textContent = '📄';
-    return tile;
+    wrap.appendChild(tile);
+    return wrap;
   }
 
   const img = document.createElement('img');
@@ -184,7 +201,8 @@ function createFaviconElement(url, host) {
     }
   };
 
-  return img;
+  wrap.appendChild(img);
+  return wrap;
 }
 
 /**
@@ -332,7 +350,7 @@ function createCardElement(card, workspaceId) {
   const editBtn = document.createElement('button');
   editBtn.className = 'card-action-btn';
   editBtn.title = 'Edit card (e)';
-  editBtn.textContent = '✎';
+  editBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
   editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     openCardEditModal({
@@ -350,7 +368,7 @@ function createCardElement(card, workspaceId) {
     const copyBtn = document.createElement('button');
     copyBtn.className = 'card-action-btn';
     copyBtn.title = 'Copy URL';
-    copyBtn.textContent = '📋';
+    copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       navigator.clipboard.writeText(card.url);
@@ -363,7 +381,7 @@ function createCardElement(card, workspaceId) {
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'card-action-btn delete-btn';
   deleteBtn.title = 'Delete card (Delete)';
-  deleteBtn.textContent = '×';
+  deleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
   deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     await deleteCard(card.id, workspaceId);
@@ -405,7 +423,7 @@ function createColumnElement(col, cardsMap, workspaceId) {
 
   const handle = document.createElement('span');
   handle.className = 'col-drag-handle';
-  handle.textContent = '⋮⋮';
+  handle.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>`;
   handle.draggable = true;
   handle.title = 'Drag to reorder column';
   left.appendChild(handle);
@@ -472,7 +490,7 @@ function createColumnElement(col, cardsMap, workspaceId) {
   const noteBtn = document.createElement('button');
   noteBtn.className = 'btn-icon';
   noteBtn.title = 'Add Note to this column';
-  noteBtn.textContent = '📝';
+  noteBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
   noteBtn.addEventListener('click', () => {
     openAddNoteModal({ workspaceId, columnId: col.id, onAdded: loadAndRender });
   });
@@ -482,7 +500,7 @@ function createColumnElement(col, cardsMap, workspaceId) {
   const addBtn = document.createElement('button');
   addBtn.className = 'btn-icon';
   addBtn.title = 'Add Link(s) to this column';
-  addBtn.textContent = '+';
+  addBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
   addBtn.addEventListener('click', () => {
     openAddLinkModal({ workspaceId, columnId: col.id, onAdded: loadAndRender });
   });
@@ -492,7 +510,7 @@ function createColumnElement(col, cardsMap, workspaceId) {
   const colOptionsBtn = document.createElement('button');
   colOptionsBtn.className = 'btn-icon';
   colOptionsBtn.title = 'Column options & actions';
-  colOptionsBtn.textContent = '⋮';
+  colOptionsBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
   colOptionsBtn.addEventListener('click', () => {
     openColumnSettingsModal({
       col,
