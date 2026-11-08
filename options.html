@@ -212,15 +212,36 @@
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
           <select id="wallpaperSelect" aria-label="Board Wallpaper">
-            <option value="none">None (Pure Obsidian)</option>
-            <option value="gradient:sunset">Obsidian Sunset</option>
-            <option value="gradient:space">Deep Space</option>
-            <option value="gradient:nordic">Nordic Frost</option>
-            <option value="gradient:violet">Midnight Violet</option>
-            <option value="custom">Custom Uploaded Image</option>
+            <optgroup label="✨ Live Interactive Shaders">
+              <option value="live:aurora">Live Aurora Borealis (Procedural Canvas)</option>
+              <option value="live:cosmos">Live Starry Cosmos & Meteors (Procedural Canvas)</option>
+              <option value="live:bokeh">Live Floating Bokeh Orbs (Interactive Parallax)</option>
+              <option value="live:waves">Live Fluid Waves (Silky Chromatic Flow)</option>
+            </optgroup>
+            <optgroup label="🎨 Curated Vector Art">
+              <option value="preset:mountain">Misty Morning Mountains (Alpine Solitude)</option>
+              <option value="preset:forest">Deep Pine Forest (Artistic Green)</option>
+              <option value="preset:inkwash">Ancient Ink Wash Landscape (Ink Watercolor)</option>
+            </optgroup>
+            <optgroup label="🌌 Subtle Gradients & Obsidian">
+              <option value="gradient:aurora">Apple Aurora (Glass Luminous Mesh)</option>
+              <option value="gradient:mist">Ink Mist (Soft Mountain Hue)</option>
+              <option value="gradient:clouds">Sky & Clouds (Pixel Cloudscape)</option>
+              <option value="gradient:sunset">Obsidian Sunset</option>
+              <option value="gradient:space">Deep Space</option>
+              <option value="gradient:nordic">Nordic Frost</option>
+              <option value="gradient:violet">Midnight Violet</option>
+              <option value="none">None (Pure Obsidian)</option>
+            </optgroup>
+            <optgroup label="🎬 Custom Video, GIF & Uploads">
+              <option value="custom">Custom Uploaded File (Video / GIF / Image)</option>
+              <option value="custom:url">Direct Video or Image URL</option>
+            </optgroup>
           </select>
-          <input type="file" id="wallpaperUploadInput" accept="image/*" style="display: none;" aria-label="Upload custom wallpaper file" tabindex="-1">
-          <button id="uploadWallpaperBtn" class="btn" style="padding: 4px 10px; font-size: 11px; display: none;">Upload Image</button>
+          <input type="file" id="wallpaperUploadInput" accept="video/mp4,video/webm,image/*" style="display: none;" aria-label="Upload custom wallpaper file" tabindex="-1">
+          <button id="uploadWallpaperBtn" class="btn" style="padding: 4px 10px; font-size: 11px; display: none;">Upload File</button>
+          <input type="url" id="wallpaperUrlInput" placeholder="https://...mp4 or image URL" style="display: none; padding: 4px 8px; font-size: 11px; width: 200px;" aria-label="Custom wallpaper direct URL">
+          <button id="applyWallpaperUrlBtn" class="btn" style="padding: 4px 10px; font-size: 11px; display: none;">Apply URL</button>
         </div>
       </div>
 
@@ -229,10 +250,74 @@
           <div class="setting-title">Wallpaper Dim & Blur</div>
           <div class="setting-desc">Adjust opacity dimming and background blur to preserve card text contrast.</div>
         </div>
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <label style="font-size: 11px; cursor: pointer;">Dim: <input type="range" id="wallpaperDim" min="0" max="80" value="40" style="vertical-align: middle;" aria-label="Wallpaper dim percentage"></label>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <label style="font-size: 11px; cursor: pointer;">Dim: <input type="range" id="wallpaperDim" min="0" max="80" value="15" style="vertical-align: middle;" aria-label="Wallpaper dim percentage"></label>
           <label style="font-size: 11px; cursor: pointer;">Blur: <input type="range" id="wallpaperBlur" min="0" max="20" value="0" style="vertical-align: middle;" aria-label="Wallpaper blur radius"></label>
+          <label style="font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" id="wallpaperEcoMode" aria-label="Eco Power Guard"> Eco Guard (30 FPS)</label>
         </div>
+      </div>
+    </div>
+
+    <h2>Widgets & Markmez Zen Layout</h2>
+    <div class="section-card">
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="widgetWeather" class="setting-title" style="cursor: pointer;">Weather Pill Widget</label>
+          <div class="setting-desc">Display live weather conditions and temperature in the top navigation bar.</div>
+        </div>
+        <input type="checkbox" id="widgetWeather" aria-label="Weather Pill Widget">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="weatherCityInput" class="setting-title">Weather Location & Unit</label>
+          <div class="setting-desc">City name for weather forecast and temperature scale (°C or °F).</div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" id="weatherCityInput" placeholder="New York" style="width: 140px;" aria-label="Weather City">
+          <select id="weatherUnitSelect" aria-label="Weather Unit" style="width: 70px;">
+            <option value="C">°C</option>
+            <option value="F">°F</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="widgetFocusToday" class="setting-title" style="cursor: pointer;">Focus Today Widget</label>
+          <div class="setting-desc">Show total minutes focused today synced with the Pomodoro timer.</div>
+        </div>
+        <input type="checkbox" id="widgetFocusToday" aria-label="Focus Today Widget">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="widgetClock" class="setting-title" style="cursor: pointer;">Clock & Date Widget</label>
+          <div class="setting-desc">Display dynamic date and current time in the top navigation bar.</div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <select id="clockFormatSelect" aria-label="Clock Format" style="width: 90px;">
+            <option value="12">12-hour</option>
+            <option value="24">24-hour</option>
+          </select>
+          <input type="checkbox" id="widgetClock" aria-label="Clock and Date Widget">
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="widgetPomodoro" class="setting-title" style="cursor: pointer;">Pomodoro Card Widget</label>
+          <div class="setting-desc">Visual Pomodoro card on the board with Focus/Break tabs, timer, and audio chime.</div>
+        </div>
+        <input type="checkbox" id="widgetPomodoro" aria-label="Pomodoro Card Widget">
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <label for="widgetCalendar" class="setting-title" style="cursor: pointer;">Calendar Card Widget</label>
+          <div class="setting-desc">Visual monthly calendar card on the board with current date highlight.</div>
+        </div>
+        <input type="checkbox" id="widgetCalendar" aria-label="Calendar Card Widget">
       </div>
     </div>
 

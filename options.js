@@ -16,8 +16,21 @@ const themeSelect = document.getElementById('themeSelect');
 const wallpaperSelect = document.getElementById('wallpaperSelect');
 const wallpaperUploadInput = document.getElementById('wallpaperUploadInput');
 const uploadWallpaperBtn = document.getElementById('uploadWallpaperBtn');
+const wallpaperUrlInput = document.getElementById('wallpaperUrlInput');
+const applyWallpaperUrlBtn = document.getElementById('applyWallpaperUrlBtn');
 const wallpaperDim = document.getElementById('wallpaperDim');
 const wallpaperBlur = document.getElementById('wallpaperBlur');
+const wallpaperEcoMode = document.getElementById('wallpaperEcoMode');
+
+// Widgets Configuration Hooks
+const widgetWeatherEl = document.getElementById('widgetWeather');
+const weatherCityInput = document.getElementById('weatherCityInput');
+const weatherUnitSelect = document.getElementById('weatherUnitSelect');
+const widgetFocusTodayEl = document.getElementById('widgetFocusToday');
+const widgetClockEl = document.getElementById('widgetClock');
+const clockFormatSelect = document.getElementById('clockFormatSelect');
+const widgetPomodoroEl = document.getElementById('widgetPomodoro');
+const widgetCalendarEl = document.getElementById('widgetCalendar');
 
 const closeTabOnQuickSaveEl = document.getElementById('closeTabOnQuickSave');
 const openLinksInNewTabEl = document.getElementById('openLinksInNewTab');
@@ -51,10 +64,32 @@ async function loadSettings() {
   const settings = meta.settings || {};
 
   themeSelect.value = settings.theme || 'dark';
-  wallpaperSelect.value = settings.wallpaper || 'none';
-  uploadWallpaperBtn.style.display = settings.wallpaper === 'custom' ? 'inline-block' : 'none';
-  wallpaperDim.value = settings.wallpaperDim ?? 40;
+  const wp = settings.wallpaper || 'preset:mountain';
+  const isUrl = wp.startsWith('url:');
+  wallpaperSelect.value = isUrl ? 'custom:url' : wp;
+  uploadWallpaperBtn.style.display = (wp === 'custom' || wp === 'custom:image' || wp === 'custom:video') ? 'inline-block' : 'none';
+  if (wallpaperUrlInput) {
+    wallpaperUrlInput.style.display = isUrl ? 'inline-block' : 'none';
+    wallpaperUrlInput.value = isUrl ? wp.slice(4) : '';
+  }
+  if (applyWallpaperUrlBtn) {
+    applyWallpaperUrlBtn.style.display = isUrl ? 'inline-block' : 'none';
+  }
+  wallpaperDim.value = settings.wallpaperDim ?? 15;
   wallpaperBlur.value = settings.wallpaperBlur ?? 0;
+  if (wallpaperEcoMode) wallpaperEcoMode.checked = Boolean(settings.wallpaperEcoMode);
+
+  // Widgets
+  const enabledWidgets = settings.widgets || ['clock', 'weather', 'focus-today', 'pomodoro', 'calendar'];
+  if (widgetWeatherEl) widgetWeatherEl.checked = enabledWidgets.includes('weather');
+  if (widgetFocusTodayEl) widgetFocusTodayEl.checked = enabledWidgets.includes('focus-today');
+  if (widgetClockEl) widgetClockEl.checked = enabledWidgets.includes('clock');
+  if (widgetPomodoroEl) widgetPomodoroEl.checked = enabledWidgets.includes('pomodoro');
+  if (widgetCalendarEl) widgetCalendarEl.checked = enabledWidgets.includes('calendar');
+
+  if (weatherCityInput) weatherCityInput.value = settings.weatherCity || 'New York';
+  if (weatherUnitSelect) weatherUnitSelect.value = settings.weatherUnit || 'C';
+  if (clockFormatSelect) clockFormatSelect.value = settings.clockIs24h ? '24' : '12';
 
   closeTabOnQuickSaveEl.checked = !!settings.closeTabOnQuickSave;
   openLinksInNewTabEl.checked = settings.openLinksInNewTab !== false;
@@ -94,19 +129,55 @@ themeSelect.addEventListener('change', () => saveSetting('theme', themeSelect.va
 
 wallpaperSelect.addEventListener('change', async () => {
   const val = wallpaperSelect.value;
-  uploadWallpaperBtn.style.display = val === 'custom' ? 'inline-block' : 'none';
-  await saveSetting('wallpaper', val);
-  if (val === 'custom') {
+  const isCustomFile = val === 'custom';
+  const isUrl = val === 'custom:url';
+
+  uploadWallpaperBtn.style.display = isCustomFile ? 'inline-block' : 'none';
+  if (wallpaperUrlInput) wallpaperUrlInput.style.display = isUrl ? 'inline-block' : 'none';
+  if (applyWallpaperUrlBtn) applyWallpaperUrlBtn.style.display = isUrl ? 'inline-block' : 'none';
+
+  if (!isUrl) {
+    await saveSetting('wallpaper', val);
+  }
+  if (isCustomFile) {
     wallpaperUploadInput.click();
   }
 });
 
 uploadWallpaperBtn.addEventListener('click', () => wallpaperUploadInput.click());
 
+if (applyWallpaperUrlBtn && wallpaperUrlInput) {
+  applyWallpaperUrlBtn.addEventListener('click', async () => {
+    const rawUrl = wallpaperUrlInput.value.trim();
+    if (!rawUrl) return;
+    await saveSetting('wallpaper', `url:${rawUrl}`);
+    alert('Custom wallpaper streaming URL saved!');
+  });
+}
+
 wallpaperUploadInput.addEventListener('change', async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
 
+  if (file.size > 52428800) {
+    alert('File exceeds 50MB limit. Please choose a smaller video or image.');
+    return;
+  }
+
+  // Handle Video Upload (MP4, WebM)
+  if (file.type.startsWith('video/')) {
+    try {
+      await saveBlob('wallpaper_custom', file);
+      await saveSetting('wallpaper', 'custom:video');
+      alert('Custom live video wallpaper saved successfully!');
+    } catch (err) {
+      console.error('Error saving video blob:', err);
+      alert('Failed to save video to storage.');
+    }
+    return;
+  }
+
+  // Handle Image Upload
   const reader = new FileReader();
   reader.onload = (evt) => {
     const img = new Image();
@@ -134,7 +205,7 @@ wallpaperUploadInput.addEventListener('change', async (e) => {
       canvas.toBlob(async (blob) => {
         if (blob) {
           await saveBlob('wallpaper_custom', blob);
-          await saveSetting('wallpaper', 'custom');
+          await saveSetting('wallpaper', 'custom:image');
           alert('Custom wallpaper saved successfully!');
         }
       }, 'image/webp', 0.85);
@@ -151,6 +222,45 @@ wallpaperDim.addEventListener('change', () =>
 wallpaperBlur.addEventListener('change', () =>
   saveSetting('wallpaperBlur', parseInt(wallpaperBlur.value, 10))
 );
+
+if (wallpaperEcoMode) {
+  wallpaperEcoMode.addEventListener('change', () =>
+    saveSetting('wallpaperEcoMode', wallpaperEcoMode.checked)
+  );
+}
+
+// Widgets Listeners
+function saveWidgetsConfig() {
+  const widgets = [];
+  if (widgetClockEl?.checked) widgets.push('clock');
+  if (widgetWeatherEl?.checked) widgets.push('weather');
+  if (widgetFocusTodayEl?.checked) widgets.push('focus-today');
+  if (widgetPomodoroEl?.checked) widgets.push('pomodoro');
+  if (widgetCalendarEl?.checked) widgets.push('calendar');
+  saveSetting('widgets', widgets);
+}
+
+[widgetWeatherEl, widgetFocusTodayEl, widgetClockEl, widgetPomodoroEl, widgetCalendarEl].forEach((el) => {
+  if (el) el.addEventListener('change', saveWidgetsConfig);
+});
+
+if (weatherCityInput) {
+  weatherCityInput.addEventListener('change', () => {
+    saveSetting('weatherCity', weatherCityInput.value.trim() || 'New York');
+  });
+}
+
+if (weatherUnitSelect) {
+  weatherUnitSelect.addEventListener('change', () => {
+    saveSetting('weatherUnit', weatherUnitSelect.value);
+  });
+}
+
+if (clockFormatSelect) {
+  clockFormatSelect.addEventListener('change', () => {
+    saveSetting('clockIs24h', clockFormatSelect.value === '24');
+  });
+}
 
 // Capture & Behavior Listeners
 closeTabOnQuickSaveEl.addEventListener('change', () =>

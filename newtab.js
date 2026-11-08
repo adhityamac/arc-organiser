@@ -29,6 +29,8 @@ import {
 } from './lib/ui/widgets.js';
 import { openTriageMode } from './lib/ui/triage.js';
 import { getBlob } from './lib/db.js';
+import { mountLiveWallpaper, unmountLiveWallpaper } from './lib/ui/live-wallpaper.js';
+import { openWallpaperModal } from './lib/ui/wallpaper-modal.js';
 
 performance.mark('mbt_init_start');
 
@@ -47,10 +49,21 @@ const mainSearchInput = document.getElementById('main-search-input');
 const googleSearchBtn = document.getElementById('google-search-btn');
 const floatingMenuBtn = document.getElementById('floating-menu-btn');
 const floatingSettingsBtn = document.getElementById('floating-settings-btn');
+const floatingWallpaperBtn = document.getElementById('floating-wallpaper-btn');
 const quickMenuPopover = document.getElementById('quick-menu-popover');
 
 // Glass UI: Column color palette for subtle tinting
 const COLUMN_COLORS = ['pink', 'sage', 'cream', 'amber', 'lavender', 'sky', 'rose', 'mint'];
+
+function triggerWallpaperModal() {
+  const activeWs = (currentMeta?.workspaces || []).find((w) => w.id === currentMeta?.activeWorkspaceId);
+  openWallpaperModal({
+    meta: currentMeta,
+    activeWorkspaceId: currentMeta?.activeWorkspaceId,
+    onApplyWallpaper: (settings) => applyWallpaper(settings, activeWs),
+    showToast,
+  });
+}
 
 function triggerSearchPalette() {
   openCommandPalette({
@@ -58,6 +71,11 @@ function triggerSearchPalette() {
     meta: currentMeta,
     onNavigate: loadAndRender,
     showToast,
+    onOpenWallpaperModal: triggerWallpaperModal,
+    onApplyWallpaper: (settings) => {
+      const activeWs = (currentMeta?.workspaces || []).find((w) => w.id === currentMeta?.activeWorkspaceId);
+      applyWallpaper(settings, activeWs);
+    },
   });
 }
 
@@ -84,14 +102,98 @@ function applyViewMode(mode) {
   }
 }
 
-async function applyWallpaper(settings) {
+async function applyWallpaper(settings, activeWs) {
   if (!wallpaperLayer) return;
-  const wp = settings?.wallpaper || 'preset:mountain';
-  const dim = settings?.wallpaperDim ?? (wp === 'preset:forest' ? 15 : 10);
-  const blur = settings?.wallpaperBlur ?? 0;
+
+  const isWsOverridden = Boolean(activeWs?.wallpaper);
+  const wp = isWsOverridden ? activeWs.wallpaper : (settings?.wallpaper || 'preset:mountain');
+  const dim = isWsOverridden
+    ? (activeWs.wallpaperDim ?? 15)
+    : (settings?.wallpaperDim ?? (wp === 'preset:forest' ? 15 : 10));
+  const blur = isWsOverridden
+    ? (activeWs.wallpaperBlur ?? 0)
+    : (settings?.wallpaperBlur ?? 0);
+  const ecoMode = Boolean(settings?.wallpaperEcoMode);
 
   wallpaperLayer.style.opacity = `${(100 - dim) / 100}`;
   wallpaperLayer.style.filter = blur > 0 ? `blur(${blur}px)` : 'none';
+
+  // Revoke previous custom object URL to prevent memory leaks
+  if (wallpaperLayer._currentObjectUrl) {
+    try {
+      URL.revokeObjectURL(wallpaperLayer._currentObjectUrl);
+    } catch {}
+    wallpaperLayer._currentObjectUrl = null;
+  }
+
+  // 1. Procedural Live Shaders (Aurora, Cosmos, Bokeh, Waves)
+  if (wp && wp.startsWith('live:')) {
+    wallpaperLayer.style.backgroundImage = 'none';
+    const shaderType = wp.replace('live:', '');
+    mountLiveWallpaper(wallpaperLayer, { type: shaderType, ecoMode });
+    return;
+  }
+
+  // 2. Custom Live Video
+  if (wp === 'custom:video') {
+    wallpaperLayer.style.backgroundImage = 'none';
+    try {
+      const blob = await getBlob('wallpaper_custom');
+      if (blob) {
+        const objUrl = URL.createObjectURL(blob);
+        wallpaperLayer._currentObjectUrl = objUrl;
+        mountLiveWallpaper(wallpaperLayer, { type: 'video', src: objUrl });
+        return;
+      }
+    } catch (e) {
+      console.warn('Failed to load video wallpaper blob', e);
+    }
+  }
+
+  // 3. Streaming / Direct External URL
+  if (wp && wp.startsWith('url:')) {
+    const rawUrl = wp.slice(4);
+    const isVideo = /\.(mp4|webm|ogv)(\?.*)?$/i.test(rawUrl);
+    if (isVideo) {
+      wallpaperLayer.style.backgroundImage = 'none';
+      mountLiveWallpaper(wallpaperLayer, { type: 'video', src: rawUrl });
+      return;
+    } else {
+      unmountLiveWallpaper();
+      wallpaperLayer.style.backgroundImage = `url('${rawUrl}')`;
+      wallpaperLayer.style.backgroundSize = 'cover';
+      wallpaperLayer.style.backgroundPosition = 'center';
+      return;
+    }
+  }
+
+  // 4. Custom Image / GIF
+  if (wp === 'custom:image' || wp === 'custom') {
+    try {
+      const blob = await getBlob('wallpaper_custom');
+      if (blob) {
+        if (blob.type && blob.type.startsWith('video/')) {
+          wallpaperLayer.style.backgroundImage = 'none';
+          const objUrl = URL.createObjectURL(blob);
+          wallpaperLayer._currentObjectUrl = objUrl;
+          mountLiveWallpaper(wallpaperLayer, { type: 'video', src: objUrl });
+          return;
+        }
+        unmountLiveWallpaper();
+        const objUrl = URL.createObjectURL(blob);
+        wallpaperLayer._currentObjectUrl = objUrl;
+        wallpaperLayer.style.backgroundImage = `url(${objUrl})`;
+        wallpaperLayer.style.backgroundSize = 'cover';
+        wallpaperLayer.style.backgroundPosition = 'center';
+        return;
+      }
+    } catch {
+      wallpaperLayer.style.backgroundImage = 'none';
+    }
+  }
+
+  // 5. Static Wallpapers & SVG Presets
+  unmountLiveWallpaper();
 
   if (!wp || wp === 'none') {
     wallpaperLayer.style.backgroundImage = 'none';
@@ -109,23 +211,23 @@ async function applyWallpaper(settings) {
     wallpaperLayer.style.backgroundPosition = 'center';
   } else if (wp.startsWith('gradient:')) {
     const gradients = {
+      'gradient:aurora': 'radial-gradient(at 15% 20%, rgba(99, 102, 241, 0.45) 0px, transparent 55%), radial-gradient(at 85% 15%, rgba(236, 72, 153, 0.4) 0px, transparent 55%), radial-gradient(at 50% 90%, rgba(14, 165, 233, 0.35) 0px, transparent 60%), radial-gradient(at 80% 80%, rgba(168, 85, 247, 0.38) 0px, transparent 50%), radial-gradient(at 20% 80%, rgba(16, 185, 129, 0.3) 0px, transparent 50%), linear-gradient(180deg, #0b0f19 0%, #05070d 100%)',
+      'gradient:mist': 'radial-gradient(at 80% 25%, rgba(148, 163, 184, 0.35) 0px, transparent 50%), radial-gradient(at 20% 80%, rgba(203, 213, 225, 0.25) 0px, transparent 55%), linear-gradient(180deg, #181d28 0%, #0e121a 100%)',
+      'gradient:clouds': 'radial-gradient(at 85% 30%, rgba(254, 215, 170, 0.45) 0px, transparent 50%), radial-gradient(at 20% 60%, rgba(186, 230, 253, 0.5) 0px, transparent 60%), linear-gradient(180deg, #38bdf8 0%, #818cf8 50%, #f472b6 100%)',
       'gradient:sunset': 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #701a75 100%)',
       'gradient:space': 'linear-gradient(135deg, #09090b 0%, #172554 50%, #030712 100%)',
       'gradient:nordic': 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
       'gradient:violet': 'linear-gradient(135deg, #2e1065 0%, #3b0764 50%, #0f172a 100%)',
     };
     wallpaperLayer.style.backgroundImage = gradients[wp] || 'none';
-  } else if (wp === 'custom') {
-    try {
-      const blob = await getBlob('wallpaper_custom');
-      if (blob) {
-        wallpaperLayer.style.backgroundImage = `url(${URL.createObjectURL(blob)})`;
-        wallpaperLayer.style.backgroundSize = 'cover';
-        wallpaperLayer.style.backgroundPosition = 'center';
-      }
-    } catch {
-      wallpaperLayer.style.backgroundImage = 'none';
-    }
+  } else if (wp.startsWith('gradient-')) {
+    const gradients = {
+      'gradient-aurora': 'radial-gradient(circle at 20% 20%, #1e1b4b 0%, #0f172a 50%, #020617 100%)',
+      'gradient-dusk': 'linear-gradient(135deg, #2e1065 0%, #172554 50%, #020617 100%)',
+      'gradient-forest': 'radial-gradient(circle at 80% 20%, #064e3b 0%, #0f172a 60%, #020617 100%)',
+      'gradient-editorial': 'linear-gradient(180deg, #fdfbf7 0%, #f1efe7 100%)',
+    };
+    wallpaperLayer.style.backgroundImage = gradients[wp] || 'none';
   }
 }
 
@@ -254,14 +356,24 @@ if (floatingMenuBtn && quickMenuPopover) {
     });
   }
 
+  if (floatingWallpaperBtn) {
+    floatingWallpaperBtn.addEventListener('click', triggerWallpaperModal);
+  }
+
   async function setWallpaperPreset(wp) {
     quickMenuPopover.style.display = 'none';
     currentMeta.settings = currentMeta.settings || {};
     currentMeta.settings.wallpaper = wp;
-    applyWallpaper(currentMeta.settings);
+    const activeWs = (currentMeta.workspaces || []).find((w) => w.id === currentMeta.activeWorkspaceId);
+    applyWallpaper(currentMeta.settings, activeWs);
     await chrome.storage.local.set({ meta: currentMeta });
-    showToast(`Wallpaper changed to ${wp.replace('preset:', '')}`);
+    showToast(`Wallpaper changed to ${wp.replace('preset:', '').replace('live:', 'Live ')}`);
   }
+
+  document.getElementById('menu-wallpaper-gallery')?.addEventListener('click', () => {
+    quickMenuPopover.style.display = 'none';
+    triggerWallpaperModal();
+  });
 
   document.getElementById('menu-wallpaper-mountain')?.addEventListener('click', () => setWallpaperPreset('preset:mountain'));
   document.getElementById('menu-wallpaper-forest')?.addEventListener('click', () => setWallpaperPreset('preset:forest'));
@@ -677,7 +789,8 @@ async function loadAndRender() {
 
   applyTheme(currentMeta.settings?.theme || 'light');
   applyViewMode(currentMeta.settings?.viewMode || 'board');
-  applyWallpaper(currentMeta.settings);
+  const activeWs = (currentMeta.workspaces || []).find((w) => w.id === activeWsId);
+  applyWallpaper(currentMeta.settings, activeWs);
 
   if (currentLayout) {
     renderBoard(currentLayout, currentCards, activeWsId);
