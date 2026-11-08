@@ -1,0 +1,13 @@
+{
+  "name": "minimal-board-tab",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/url.test.mjs tests/store.test.mjs tests/markdown.test.mjs tests/search.test.mjs tests/merge.test.mjs tests/rules.test.mjs tests/crypto.test.mjs tests/benchmark.test.mjs",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
+  }
+}
