@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Dark Evergreen Canopy Background -->
+    <linearGradient id="forestSkyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a1510"/>
+      <stop offset="40%" stop-color="#11221a"/>
+      <stop offset="75%" stop-color="#162b21"/>
+      <stop offset="100%" stop-color="#1f382b"/>
+    </linearGradient>
+
+    <!-- Forest Mist Gradients -->
+    <radialGradient id="mistRadial" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#698575" stop-opacity="0.32"/>
+      <stop offset="50%" stop-color="#3b5446" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#0e1a14" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="canopyTone1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14261c"/>
+      <stop offset="100%" stop-color="#243d2f"/>
+    </linearGradient>
+
+    <linearGradient id="canopyTone2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#182e22"/>
+      <stop offset="100%" stop-color="#2a4938"/>
+    </linearGradient>
+
+    <filter id="forestMistBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="35"/>
+    </filter>
+
+    <!-- Pine Tree Cluster Pattern -->
+    <pattern id="pineCluster" width="240" height="240" patternUnits="userSpaceOnUse">
+      <!-- Spruce silhouettes of varying tones and sizes -->
+      <polygon points="60,20 40,70 80,70" fill="#1b3326" opacity="0.85"/>
+      <polygon points="60,50 30,105 90,105" fill="#162a20" opacity="0.9"/>
+      <polygon points="60,85 20,145 100,145" fill="#13231a" opacity="0.95"/>
+
+      <polygon points="170,10 150,60 190,60" fill="#203a2c" opacity="0.85"/>
+      <polygon points="170,40 140,95 200,95" fill="#1a3124" opacity="0.9"/>
+      <polygon points="170,75 130,135 210,135" fill="#14261d" opacity="0.95"/>
+
+      <polygon points="115,110 100,150 130,150" fill="#234231" opacity="0.85"/>
+      <polygon points="115,135 90,185 140,185" fill="#1a3225" opacity="0.9"/>
+      <polygon points="115,165 80,225 150,225" fill="#13231a" opacity="0.95"/>
+
+      <polygon points="220,120 205,160 235,160" fill="#1c3427" opacity="0.85"/>
+      <polygon points="220,145 195,195 245,195" fill="#172b20" opacity="0.9"/>
+      <polygon points="220,175 185,235 255,235" fill="#122119" opacity="0.95"/>
+    </pattern>
+  </defs>
+
+  <!-- Forest Base Tone -->
+  <rect width="100%" height="100%" fill="url(#forestSkyGrad)"/>
+
+  <!-- Repeating Deep Pine Canopy Layers -->
+  <rect width="100%" height="100%" fill="url(#pineCluster)"/>
+  <rect x="60" y="80" width="100%" height="100%" fill="url(#pineCluster)" opacity="0.75"/>
+
+  <!-- Soft Shifting Canopy Ridge Waves -->
+  <path d="M0,320 Q480,260 960,310 T1920,290 L1920,1080 L0,1080 Z" fill="url(#canopyTone1)" opacity="0.75"/>
+  
+  <!-- Swirling Forest Mist Pockets -->
+  <ellipse cx="640" cy="480" rx="700" ry="160" fill="url(#mistRadial)" filter="url(#forestMistBlur)"/>
+  <ellipse cx="1480" cy="420" rx="600" ry="140" fill="url(#mistRadial)" filter="url(#forestMistBlur)"/>
+  <ellipse cx="960" cy="740" rx="950" ry="220" fill="url(#mistRadial)" filter="url(#forestMistBlur)"/>
+
+  <path d="M0,560 Q520,490 1060,540 T1920,520 L1920,1080 L0,1080 Z" fill="url(#canopyTone2)" opacity="0.6"/>
+  <rect y="400" width="100%" height="680" fill="url(#pineCluster)" opacity="0.45"/>
+
+  <!-- Foreground Atmospheric Vignette -->
+  <radialGradient id="vignette" cx="50%" cy="50%" r="75%">
+    <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
+    <stop offset="100%" stop-color="#050a08" stop-opacity="0.65"/>
+  </radialGradient>
+  <rect width="100%" height="100%" fill="url(#vignette)"/>
+</svg>

@@ -1,5 +1,5 @@
 /**
- * Minimal Board Tab - New Tab Board Orchestrator
+ * Minimal Board Tab - New Tab Board Orchestrator (Markmez Zen Layout)
  * Pure vanilla ES2022 module. Zero dependencies.
  */
 
@@ -22,7 +22,11 @@ import {
 import { renderMarkdownLite } from './lib/ui/markdown.js';
 import { openCommandPalette } from './lib/ui/palette.js';
 import { toggleTabDrawer } from './lib/ui/drawer.js';
-import { mountWidgets } from './lib/ui/widgets.js';
+import {
+  mountTopBarWidgets,
+  createPomodoroCardElement,
+  createCalendarCardElement,
+} from './lib/ui/widgets.js';
 import { openTriageMode } from './lib/ui/triage.js';
 import { getBlob } from './lib/db.js';
 
@@ -37,15 +41,16 @@ let toastTimeout = null;
 const boardContainer = document.getElementById('board-container');
 const workspaceSwitcher = document.getElementById('workspace-switcher');
 const toastContainer = document.getElementById('toast-container');
-const settingsBtn = document.getElementById('settings-btn');
-const addColumnBtn = document.getElementById('add-column-btn');
-const searchTriggerBtn = document.getElementById('search-trigger-btn');
-const drawerToggleBtn = document.getElementById('drawer-toggle-btn');
-const widgetsContainer = document.getElementById('widgets-container');
 const wallpaperLayer = document.getElementById('wallpaper-layer');
-const triageTriggerBtn = document.getElementById('triage-trigger-btn');
-const viewModeBtn = document.getElementById('view-mode-btn');
-const themeToggleBtn = document.getElementById('theme-toggle-btn');
+const topWidgetsContainer = document.getElementById('top-widgets-container');
+const mainSearchInput = document.getElementById('main-search-input');
+const googleSearchBtn = document.getElementById('google-search-btn');
+const floatingMenuBtn = document.getElementById('floating-menu-btn');
+const floatingSettingsBtn = document.getElementById('floating-settings-btn');
+const quickMenuPopover = document.getElementById('quick-menu-popover');
+
+// Glass UI: Column color palette for subtle tinting
+const COLUMN_COLORS = ['pink', 'sage', 'cream', 'amber', 'lavender', 'sky', 'rose', 'mint'];
 
 function triggerSearchPalette() {
   openCommandPalette({
@@ -67,65 +72,22 @@ function triggerTriage() {
   });
 }
 
-if (triageTriggerBtn) {
-  triageTriggerBtn.addEventListener('click', triggerTriage);
-}
-
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  if (themeToggleBtn) {
-    if (theme === 'light') {
-      themeToggleBtn.innerHTML = `<svg class="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
-      themeToggleBtn.title = 'Switch to Dark Theme';
-    } else {
-      themeToggleBtn.innerHTML = `<svg class="theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
-      themeToggleBtn.title = 'Switch to Light Theme';
-    }
-  }
-}
-
-if (themeToggleBtn) {
-  themeToggleBtn.addEventListener('click', async () => {
-    const currentTheme = currentMeta?.settings?.theme || 'dark';
-    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    currentMeta.settings = currentMeta.settings || {};
-    currentMeta.settings.theme = nextTheme;
-    applyTheme(nextTheme);
-    await chrome.storage.local.set({ meta: currentMeta });
-  });
 }
 
 function applyViewMode(mode) {
   if (mode === 'list') {
     boardContainer.classList.add('view-mode-list');
-    if (viewModeBtn) {
-      viewModeBtn.innerHTML = `<svg class="view-mode-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
-      viewModeBtn.title = 'Switch to Board View';
-    }
   } else {
     boardContainer.classList.remove('view-mode-list');
-    if (viewModeBtn) {
-      viewModeBtn.innerHTML = `<svg class="view-mode-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`;
-      viewModeBtn.title = 'Switch to List View';
-    }
   }
-}
-
-if (viewModeBtn) {
-  viewModeBtn.addEventListener('click', async () => {
-    const currentMode = currentMeta?.settings?.viewMode || 'board';
-    const nextMode = currentMode === 'board' ? 'list' : 'board';
-    currentMeta.settings = currentMeta.settings || {};
-    currentMeta.settings.viewMode = nextMode;
-    applyViewMode(nextMode);
-    await chrome.storage.local.set({ meta: currentMeta });
-  });
 }
 
 async function applyWallpaper(settings) {
   if (!wallpaperLayer) return;
-  const wp = settings?.wallpaper;
-  const dim = settings?.wallpaperDim ?? 40;
+  const wp = settings?.wallpaper || 'preset:mountain';
+  const dim = settings?.wallpaperDim ?? (wp === 'preset:forest' ? 15 : 10);
   const blur = settings?.wallpaperBlur ?? 0;
 
   wallpaperLayer.style.opacity = `${(100 - dim) / 100}`;
@@ -133,6 +95,18 @@ async function applyWallpaper(settings) {
 
   if (!wp || wp === 'none') {
     wallpaperLayer.style.backgroundImage = 'none';
+  } else if (wp === 'preset:mountain') {
+    wallpaperLayer.style.backgroundImage = `url('wallpapers/mountain.svg')`;
+    wallpaperLayer.style.backgroundSize = 'cover';
+    wallpaperLayer.style.backgroundPosition = 'center';
+  } else if (wp === 'preset:forest') {
+    wallpaperLayer.style.backgroundImage = `url('wallpapers/forest.svg')`;
+    wallpaperLayer.style.backgroundSize = 'cover';
+    wallpaperLayer.style.backgroundPosition = 'center';
+  } else if (wp === 'preset:inkwash') {
+    wallpaperLayer.style.backgroundImage = `url('wallpapers/inkwash.svg')`;
+    wallpaperLayer.style.backgroundSize = 'cover';
+    wallpaperLayer.style.backgroundPosition = 'center';
   } else if (wp.startsWith('gradient:')) {
     const gradients = {
       'gradient:sunset': 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #701a75 100%)',
@@ -146,6 +120,8 @@ async function applyWallpaper(settings) {
       const blob = await getBlob('wallpaper_custom');
       if (blob) {
         wallpaperLayer.style.backgroundImage = `url(${URL.createObjectURL(blob)})`;
+        wallpaperLayer.style.backgroundSize = 'cover';
+        wallpaperLayer.style.backgroundPosition = 'center';
       }
     } catch {
       wallpaperLayer.style.backgroundImage = 'none';
@@ -153,15 +129,148 @@ async function applyWallpaper(settings) {
   }
 }
 
-searchTriggerBtn.addEventListener('click', triggerSearchPalette);
+// Search Bar Interactions
+function handleSearchAction(query) {
+  if (!query || !query.trim()) return;
+  const q = query.trim();
 
-if (drawerToggleBtn) {
-  drawerToggleBtn.addEventListener('click', () => {
-    toggleTabDrawer(
-      () => currentMeta?.activeWorkspaceId || 'ws_default',
-      showToast,
-      loadAndRender
-    );
+  // If looks like URL
+  if (/^https?:\/\//i.test(q) || (q.includes('.') && !q.includes(' '))) {
+    window.location.href = q.startsWith('http') ? q : `https://${q}`;
+  } else {
+    // Navigate via Google search or open internal palette
+    window.location.href = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  }
+}
+
+if (mainSearchInput) {
+  mainSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      handleSearchAction(mainSearchInput.value);
+    } else if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      triggerSearchPalette();
+    }
+  });
+
+  mainSearchInput.addEventListener('click', () => {
+    // Focus search input
+  });
+}
+
+if (googleSearchBtn) {
+  googleSearchBtn.addEventListener('click', () => {
+    const val = mainSearchInput?.value?.trim();
+    if (val) {
+      handleSearchAction(val);
+    } else {
+      triggerSearchPalette();
+    }
+  });
+}
+
+// Floating Circular Buttons (Bottom-Right)
+if (floatingSettingsBtn) {
+  floatingSettingsBtn.addEventListener('click', () => {
+    if (chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+    } else {
+      window.open('options.html');
+    }
+  });
+}
+
+if (floatingMenuBtn && quickMenuPopover) {
+  floatingMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isVisible = quickMenuPopover.style.display !== 'none';
+    quickMenuPopover.style.display = isVisible ? 'none' : 'flex';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!quickMenuPopover.contains(e.target) && e.target !== floatingMenuBtn) {
+      quickMenuPopover.style.display = 'none';
+    }
+  });
+
+  // Quick Menu Action Bindings
+  const menuAddCol = document.getElementById('menu-add-column');
+  if (menuAddCol) {
+    menuAddCol.addEventListener('click', async () => {
+      quickMenuPopover.style.display = 'none';
+      const title = prompt('Enter new column title:');
+      if (!title || !title.trim()) return;
+      const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
+      const wsKey = `ws:${activeWsId}`;
+      const colId = `col_${Date.now()}`;
+      await transaction([wsKey], (shards) => {
+        const layout = shards[wsKey];
+        layout.columnOrder.push(colId);
+        layout.columns[colId] = {
+          id: colId,
+          title: title.trim(),
+          color: '#556b2f',
+          emoji: '📌',
+          collapsed: false,
+          sort: 'manual',
+          cardIds: [],
+        };
+        return { [wsKey]: layout };
+      });
+      loadAndRender();
+    });
+  }
+
+  const menuTriage = document.getElementById('menu-triage');
+  if (menuTriage) {
+    menuTriage.addEventListener('click', () => {
+      quickMenuPopover.style.display = 'none';
+      triggerTriage();
+    });
+  }
+
+  const menuDrawer = document.getElementById('menu-tabs-drawer');
+  if (menuDrawer) {
+    menuDrawer.addEventListener('click', () => {
+      quickMenuPopover.style.display = 'none';
+      toggleTabDrawer(
+        () => currentMeta?.activeWorkspaceId || 'ws_default',
+        showToast,
+        loadAndRender
+      );
+    });
+  }
+
+  const menuTheme = document.getElementById('menu-theme-toggle');
+  if (menuTheme) {
+    menuTheme.addEventListener('click', async () => {
+      quickMenuPopover.style.display = 'none';
+      const currentTheme = currentMeta?.settings?.theme || 'dark';
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      currentMeta.settings = currentMeta.settings || {};
+      currentMeta.settings.theme = nextTheme;
+      applyTheme(nextTheme);
+      await chrome.storage.local.set({ meta: currentMeta });
+    });
+  }
+
+  async function setWallpaperPreset(wp) {
+    quickMenuPopover.style.display = 'none';
+    currentMeta.settings = currentMeta.settings || {};
+    currentMeta.settings.wallpaper = wp;
+    applyWallpaper(currentMeta.settings);
+    await chrome.storage.local.set({ meta: currentMeta });
+    showToast(`Wallpaper changed to ${wp.replace('preset:', '')}`);
+  }
+
+  document.getElementById('menu-wallpaper-mountain')?.addEventListener('click', () => setWallpaperPreset('preset:mountain'));
+  document.getElementById('menu-wallpaper-forest')?.addEventListener('click', () => setWallpaperPreset('preset:forest'));
+  document.getElementById('menu-wallpaper-inkwash')?.addEventListener('click', () => setWallpaperPreset('preset:inkwash'));
+
+  document.getElementById('menu-settings')?.addEventListener('click', () => {
+    quickMenuPopover.style.display = 'none';
+    if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
+    else window.open('options.html');
   });
 }
 
@@ -192,7 +301,6 @@ function createFaviconElement(url, host) {
   img.src = `chrome-extension://${extensionId}/_favicon/?pageUrl=${encodeURIComponent(url)}&size=32`;
 
   img.onerror = () => {
-    // Replace failed image with crisp single-letter tile
     const tile = document.createElement('span');
     tile.className = 'card-tile-fallback';
     tile.textContent = host ? host.charAt(0).toUpperCase() : '?';
@@ -207,9 +315,6 @@ function createFaviconElement(url, host) {
 
 /**
  * Displays a non-blocking toast message with an optional Undo action.
- * @param {string} message
- * @param {boolean} [showUndo=false]
- * @param {number} [durationMs=4000]
  */
 function showToast(message, showUndo = false, durationMs = 4000) {
   if (toastTimeout) {
@@ -246,20 +351,20 @@ function showToast(message, showUndo = false, durationMs = 4000) {
 }
 
 /**
- * Renders the top workspace switcher pills.
+ * Renders the top workspace switcher pills (Home, Projects, +)
  */
 function renderWorkspaceTabs(meta) {
   workspaceSwitcher.innerHTML = '';
   const workspaces = meta.workspaces || [];
 
   for (const ws of workspaces) {
+    const isActive = ws.id === meta.activeWorkspaceId;
     const tabBtn = document.createElement('button');
-    tabBtn.className = `ws-tab ${ws.id === meta.activeWorkspaceId ? 'active' : ''}`;
+    tabBtn.className = `ws-tab ${isActive ? 'active' : ''}`;
     tabBtn.dataset.wsId = ws.id;
-
-    const icon = document.createElement('span');
-    icon.textContent = ws.icon || '⚡';
-    tabBtn.appendChild(icon);
+    tabBtn.setAttribute('role', 'tab');
+    tabBtn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    tabBtn.setAttribute('aria-label', `Workspace: ${ws.name}`);
 
     const name = document.createElement('span');
     name.textContent = ws.name;
@@ -273,10 +378,33 @@ function renderWorkspaceTabs(meta) {
 
     workspaceSwitcher.appendChild(tabBtn);
   }
+
+  // "+" Add Workspace Button
+  const addWsBtn = document.createElement('button');
+  addWsBtn.className = 'ws-tab ws-tab-add';
+  addWsBtn.title = 'Create new workspace';
+  addWsBtn.setAttribute('aria-label', 'Create new workspace');
+  addWsBtn.innerHTML = `+`;
+  addWsBtn.addEventListener('click', async () => {
+    const name = prompt('Enter new workspace name:');
+    if (!name || !name.trim()) return;
+    const newWsId = `ws_${Date.now()}`;
+    meta.workspaces = meta.workspaces || [];
+    meta.workspaces.push({
+      id: newWsId,
+      parentId: null,
+      name: name.trim(),
+      icon: '📂',
+      order: meta.workspaces.length,
+    });
+    meta.activeWorkspaceId = newWsId;
+    await chrome.storage.local.set({ meta });
+  });
+  workspaceSwitcher.appendChild(addWsBtn);
 }
 
 /**
- * Builds a single card DOM element.
+ * Builds a single bookmark card DOM element.
  */
 function createCardElement(card, workspaceId) {
   const cardEl = document.createElement('article');
@@ -288,56 +416,23 @@ function createCardElement(card, workspaceId) {
   const main = document.createElement('div');
   main.className = 'card-main';
 
-  // Favicon
-  const faviconEl = createFaviconElement(card.url, card.host);
-  main.appendChild(faviconEl);
+  // Left icon badge
+  main.appendChild(createFaviconElement(card.url, card.host));
 
-  // Content
+  // Content block
   const content = document.createElement('div');
   content.className = 'card-content';
 
-  const titleLink = document.createElement('a');
-  titleLink.className = 'card-title';
-  titleLink.textContent = card.title || card.host || card.url || 'Untitled';
-  titleLink.title = card.title || '';
-  if (card.url) {
-    titleLink.href = card.url;
-    titleLink.target = currentMeta?.settings?.openLinksInNewTab !== false ? '_blank' : '_self';
-    titleLink.rel = 'noopener noreferrer';
-  }
-  content.appendChild(titleLink);
+  const titleRow = document.createElement('div');
+  titleRow.className = 'card-title-row';
 
-  const metaRow = document.createElement('div');
-  metaRow.className = 'card-meta';
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'card-title';
+  titleSpan.textContent = card.title || card.host || 'Untitled';
+  titleSpan.title = card.title || card.url;
+  titleRow.appendChild(titleSpan);
 
-  if (card.host) {
-    const hostSpan = document.createElement('span');
-    hostSpan.className = 'card-host';
-    hostSpan.textContent = card.host;
-    metaRow.appendChild(hostSpan);
-  }
-
-  content.appendChild(metaRow);
-
-  if (card.body || card.note) {
-    const notePreview = document.createElement('div');
-    notePreview.className = 'card-note-preview';
-    notePreview.innerHTML = renderMarkdownLite(card.body || card.note);
-    content.appendChild(notePreview);
-  }
-
-  // Tag pills
-  if (Array.isArray(card.tags) && card.tags.length > 0) {
-    const tagsContainer = document.createElement('div');
-    tagsContainer.className = 'card-tags';
-    for (const tag of card.tags) {
-      const pill = document.createElement('span');
-      pill.className = 'tag-pill';
-      pill.textContent = `#${tag}`;
-      tagsContainer.appendChild(pill);
-    }
-    content.appendChild(tagsContainer);
-  }
+  content.appendChild(titleRow);
 
   main.appendChild(content);
   cardEl.appendChild(main);
@@ -350,6 +445,7 @@ function createCardElement(card, workspaceId) {
   const editBtn = document.createElement('button');
   editBtn.className = 'card-action-btn';
   editBtn.title = 'Edit card (e)';
+  editBtn.setAttribute('aria-label', 'Edit card');
   editBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
   editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -368,6 +464,7 @@ function createCardElement(card, workspaceId) {
     const copyBtn = document.createElement('button');
     copyBtn.className = 'card-action-btn';
     copyBtn.title = 'Copy URL';
+    copyBtn.setAttribute('aria-label', 'Copy card URL');
     copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -381,6 +478,7 @@ function createCardElement(card, workspaceId) {
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'card-action-btn delete-btn';
   deleteBtn.title = 'Delete card (Delete)';
+  deleteBtn.setAttribute('aria-label', 'Delete card');
   deleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
   deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -407,12 +505,16 @@ function createCardElement(card, workspaceId) {
 }
 
 /**
- * Builds a column DOM element with its cards.
+ * Builds a category column DOM element with its cards.
  */
-function createColumnElement(col, cardsMap, workspaceId) {
+function createColumnElement(col, cardsMap, workspaceId, layout) {
   const colEl = document.createElement('section');
   colEl.className = 'column';
   colEl.dataset.colId = col.id;
+
+  const colIndex = layout?.columnOrder ? layout.columnOrder.indexOf(col.id) : 0;
+  const colColor = col.color_tint || COLUMN_COLORS[(colIndex >= 0 ? colIndex : 0) % COLUMN_COLORS.length];
+  colEl.dataset.color = colColor;
 
   // Header
   const header = document.createElement('header');
@@ -421,25 +523,15 @@ function createColumnElement(col, cardsMap, workspaceId) {
   const left = document.createElement('div');
   left.className = 'col-header-left';
 
-  const handle = document.createElement('span');
-  handle.className = 'col-drag-handle';
-  handle.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>`;
-  handle.draggable = true;
-  handle.title = 'Drag to reorder column';
-  left.appendChild(handle);
-
-  const emoji = document.createElement('span');
-  emoji.className = 'col-emoji';
-  emoji.textContent = col.emoji || '📌';
-  left.appendChild(emoji);
-
   const title = document.createElement('h2');
   title.className = 'col-title';
   title.textContent = col.title;
   title.title = 'Double-click to rename';
+  title.tabIndex = 0;
+  title.setAttribute('role', 'button');
 
-  // Inline rename (FR-2.2)
-  title.addEventListener('dblclick', () => {
+  // Inline rename
+  const startRename = () => {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'col-title-inline-edit';
@@ -470,47 +562,35 @@ function createColumnElement(col, cardsMap, workspaceId) {
       } else if (e.key === 'Escape') {
         committed = true;
         input.replaceWith(title);
+        title.focus();
       }
     });
-  });
+  };
 
+  title.addEventListener('dblclick', startRename);
   left.appendChild(title);
-
-  const badge = document.createElement('span');
-  badge.className = 'col-badge';
-  badge.textContent = String(col.cardIds?.length || 0);
-  left.appendChild(badge);
-
   header.appendChild(left);
 
   const right = document.createElement('div');
   right.className = 'col-header-right';
 
-  // Add Note button (FR-4.5)
-  const noteBtn = document.createElement('button');
-  noteBtn.className = 'btn-icon';
-  noteBtn.title = 'Add Note to this column';
-  noteBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
-  noteBtn.addEventListener('click', () => {
-    openAddNoteModal({ workspaceId, columnId: col.id, onAdded: loadAndRender });
-  });
-  right.appendChild(noteBtn);
-
-  // Add Link button (FR-4.3)
+  // Add Link button
   const addBtn = document.createElement('button');
   addBtn.className = 'btn-icon';
-  addBtn.title = 'Add Link(s) to this column';
-  addBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+  addBtn.title = 'Add Link';
+  addBtn.setAttribute('aria-label', `Add link to ${col.title}`);
+  addBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
   addBtn.addEventListener('click', () => {
     openAddLinkModal({ workspaceId, columnId: col.id, onAdded: loadAndRender });
   });
   right.appendChild(addBtn);
 
-  // Column Options button (FR-2.2, FR-2.5)
+  // Column Options button
   const colOptionsBtn = document.createElement('button');
   colOptionsBtn.className = 'btn-icon';
-  colOptionsBtn.title = 'Column options & actions';
-  colOptionsBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
+  colOptionsBtn.title = 'Column Options';
+  colOptionsBtn.setAttribute('aria-label', `Column options for ${col.title}`);
+  colOptionsBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
   colOptionsBtn.addEventListener('click', () => {
     openColumnSettingsModal({
       col,
@@ -532,11 +612,7 @@ function createColumnElement(col, cardsMap, workspaceId) {
   if (cardIds.length === 0) {
     const emptyHint = document.createElement('div');
     emptyHint.className = 'empty-column-hint';
-    if (col.system === 'inbox') {
-      emptyHint.innerHTML = 'Press <kbd>Alt+Shift+S</kbd> on any tab to save here.';
-    } else {
-      emptyHint.textContent = 'No cards yet. Drop tabs or click + above.';
-    }
+    emptyHint.textContent = 'No bookmarks yet';
     list.appendChild(emptyHint);
   } else {
     for (const cardId of cardIds) {
@@ -552,7 +628,7 @@ function createColumnElement(col, cardsMap, workspaceId) {
 }
 
 /**
- * Renders the entire kanban board for the active workspace.
+ * Renders the entire bento board + widgets for the active workspace.
  */
 function renderBoard(layout, cardsMap, workspaceId) {
   const fragment = document.createDocumentFragment();
@@ -561,8 +637,19 @@ function renderBoard(layout, cardsMap, workspaceId) {
   for (const colId of columnOrder) {
     const col = layout.columns[colId];
     if (col) {
-      fragment.appendChild(createColumnElement(col, cardsMap, workspaceId));
+      fragment.appendChild(createColumnElement(col, cardsMap, workspaceId, layout));
     }
+  }
+
+  // Visual Widget Cards (Pomodoro & Calendar as in Markmez)
+  const enabledWidgets = currentMeta?.settings?.widgets || ['clock', 'weather', 'focus-today', 'pomodoro', 'calendar'];
+
+  if (enabledWidgets.includes('pomodoro')) {
+    fragment.appendChild(createPomodoroCardElement({ meta: currentMeta, layout, cards: cardsMap }));
+  }
+
+  if (enabledWidgets.includes('calendar')) {
+    fragment.appendChild(createCalendarCardElement({ meta: currentMeta, layout, cards: cardsMap }));
   }
 
   boardContainer.innerHTML = '';
@@ -588,7 +675,7 @@ async function loadAndRender() {
   currentLayout = wsShards[`ws:${activeWsId}`];
   currentCards = wsShards[`cards:${activeWsId}`] || {};
 
-  applyTheme(currentMeta.settings?.theme || 'dark');
+  applyTheme(currentMeta.settings?.theme || 'light');
   applyViewMode(currentMeta.settings?.viewMode || 'board');
   applyWallpaper(currentMeta.settings);
 
@@ -596,20 +683,17 @@ async function loadAndRender() {
     renderBoard(currentLayout, currentCards, activeWsId);
   }
 
-  // Mount widgets asynchronously (FR-7.3)
-  setTimeout(() => {
-    mountWidgets(widgetsContainer, {
+  // Mount Zen Top-Bar Widgets
+  if (topWidgetsContainer) {
+    mountTopBarWidgets(topWidgetsContainer, {
       meta: currentMeta,
-      cards: currentCards,
-      layout: currentLayout,
-      onTriggerTriage: triggerTriage,
       onSaveSettings: async (key, val) => {
         currentMeta.settings = currentMeta.settings || {};
         currentMeta.settings[key] = val;
         await chrome.storage.local.set({ meta: currentMeta });
       },
     });
-  }, 30);
+  }
 
   performance.mark('mbt_init_end');
   performance.measure('mbt_board_first_paint', 'mbt_init_start', 'mbt_init_end');
@@ -621,7 +705,6 @@ async function loadAndRender() {
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local') return;
 
-  // Ignore echo events written by this context
   if (changes.meta?.newValue?.lastWriter === CONTEXT_ID) {
     return;
   }
@@ -630,134 +713,52 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   const wsKey = `ws:${activeWsId}`;
   const cardsKey = `cards:${activeWsId}`;
 
-  // If meta changed (e.g. active workspace or workspaces list)
   if (changes.meta) {
     currentMeta = changes.meta.newValue;
     renderWorkspaceTabs(currentMeta);
   }
 
-  // If active workspace's layout or cards changed
   if (changes[wsKey] || changes[cardsKey] || changes.meta) {
     loadAndRender();
   }
 });
 
-// Settings & Options trigger
-settingsBtn.addEventListener('click', () => {
-  if (chrome.runtime.openOptionsPage) {
-    chrome.runtime.openOptionsPage();
-  } else {
-    window.open(chrome.runtime.getURL('options.html'));
+// Drag and drop initialization
+initDragAndDrop({
+  boardContainer,
+  getWorkspaceId: () => currentMeta?.activeWorkspaceId || 'ws_default',
+  onCardsReordered: loadAndRender,
+  onColumnsReordered: loadAndRender,
+  showToast,
+});
+
+// Global Keyboard Navigation (Section 4 & FR-5.1)
+window.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea, [contenteditable="true"]')) {
+    return;
   }
-});
 
-// Add column trigger
-addColumnBtn.addEventListener('click', async () => {
-  const title = prompt('Enter new column title:');
-  if (!title) return;
-
-  const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
-  const wsKey = `ws:${activeWsId}`;
-  const colId = `col_${Date.now()}`;
-
-  const shards = await new Promise((res) => chrome.storage.local.get(wsKey, res));
-  const layout = shards[wsKey];
-  if (!layout) return;
-
-  layout.columnOrder.push(colId);
-  layout.columns[colId] = {
-    id: colId,
-    title,
-    color: '#3b82f6',
-    emoji: '📌',
-    collapsed: false,
-    sort: 'manual',
-    cardIds: [],
-  };
-
-  await chrome.storage.local.set({ [wsKey]: layout });
-  showToast(`Column "${title}" created`);
-});
-
-// Keyboard shortcuts for New Tab page
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-  // Search trigger: / or Ctrl/Cmd+K
-  if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+  if (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) {
     e.preventDefault();
     triggerSearchPalette();
-  }
-
-  // Triage review shortcut: 'r' (FR-8.1)
-  if (e.key === 'r' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+  } else if (e.key === 'r') {
     e.preventDefault();
     triggerTriage();
-  }
-
-  // Toggle Tab Drawer: 't' (FR-5.9)
-  if (e.key === 't' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+  } else if (e.key === 't') {
     e.preventDefault();
     toggleTabDrawer(
       () => currentMeta?.activeWorkspaceId || 'ws_default',
       showToast,
       loadAndRender
     );
-  }
-
-  // Workspace cycling: [ and ]
-  if (e.key === '[' || e.key === ']') {
-    const workspaces = currentMeta?.workspaces || [];
-    if (workspaces.length <= 1) return;
-    const currentIdx = workspaces.findIndex((w) => w.id === currentMeta.activeWorkspaceId);
-    let nextIdx = e.key === ']' ? currentIdx + 1 : currentIdx - 1;
-    if (nextIdx >= workspaces.length) nextIdx = 0;
-    if (nextIdx < 0) nextIdx = workspaces.length - 1;
-    const nextWs = workspaces[nextIdx];
-    currentMeta.activeWorkspaceId = nextWs.id;
-    chrome.storage.local.set({ meta: currentMeta });
-  }
-
-  // New column shortcut: Shift+N
-  if (e.shiftKey && e.key === 'N') {
+  } else if (e.key === 'N' && e.shiftKey) {
     e.preventDefault();
-    addColumnBtn.click();
+    document.getElementById('menu-add-column')?.click();
+  } else if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+    e.preventDefault();
+    undoLastAction().then(() => showToast('Action undone'));
   }
-
-  // Edit card shortcut: 'e' on focused card
-  if (e.key === 'e' && !e.ctrlKey && !e.altKey && !e.metaKey) {
-    const focusedCard = document.activeElement?.closest('.card');
-    if (focusedCard) {
-      const cardId = focusedCard.dataset.cardId;
-      const card = currentCards && currentCards[cardId];
-      if (card) {
-        e.preventDefault();
-        openCardEditModal({
-          card,
-          workspaceId: currentMeta?.activeWorkspaceId || 'ws_default',
-          layout: currentLayout,
-          meta: currentMeta,
-          onSave: loadAndRender,
-        });
-      }
-    }
-  }
-
-  // Keyboard reordering alternative (Alt+Arrows, m)
-  handleKeyboardReorder(
-    e,
-    currentMeta?.activeWorkspaceId || 'ws_default',
-    showToast,
-    (cardId, wsId) => openMoveModal(cardId, wsId, currentLayout, currentMeta, loadAndRender)
-  );
 });
-
-// Initialize Drag and Drop engine
-initDragAndDrop(
-  boardContainer,
-  () => currentMeta?.activeWorkspaceId || 'ws_default',
-  showToast
-);
 
 // Initial boot
 loadAndRender();

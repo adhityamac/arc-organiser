@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Sky & Atmosphere Gradients -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cfdcd4"/>
+      <stop offset="35%" stop-color="#dfe9e2"/>
+      <stop offset="70%" stop-color="#edf4ee"/>
+      <stop offset="100%" stop-color="#f6f9f5"/>
+    </linearGradient>
+
+    <!-- Morning Sun Glow -->
+    <radialGradient id="sunGlow" cx="65%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="#fff8eb" stop-opacity="0.8"/>
+      <stop offset="40%" stop-color="#f4eee1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#dfe9e2" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Mountain Layer Gradients -->
+    <linearGradient id="mtnFar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a4b8af" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#c5d6cc" stop-opacity="0.85"/>
+    </linearGradient>
+
+    <linearGradient id="mtnMidFar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#849b8f"/>
+      <stop offset="60%" stop-color="#9eb3a7"/>
+      <stop offset="100%" stop-color="#bdd1c6"/>
+    </linearGradient>
+
+    <linearGradient id="mtnMid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#698273"/>
+      <stop offset="60%" stop-color="#7e998a"/>
+      <stop offset="100%" stop-color="#a5beaF"/>
+    </linearGradient>
+
+    <linearGradient id="mtnNear" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#556e5f"/>
+      <stop offset="50%" stop-color="#6b8474"/>
+      <stop offset="100%" stop-color="#8ba293"/>
+    </linearGradient>
+
+    <linearGradient id="mtnForeground" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#495f51"/>
+      <stop offset="40%" stop-color="#5b7364"/>
+      <stop offset="100%" stop-color="#799182"/>
+    </linearGradient>
+
+    <!-- Valley Fog Layers -->
+    <linearGradient id="fogGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#f2f7f3" stop-opacity="0.85"/>
+      <stop offset="50%" stop-color="#eaf1ec" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#eaf1ec" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="softMist" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+  </defs>
+
+  <!-- Sky Base -->
+  <rect width="100%" height="100%" fill="url(#skyGrad)"/>
+  <rect width="100%" height="100%" fill="url(#sunGlow)"/>
+
+  <!-- Distant Mountains Layer 1 -->
+  <path d="M0,520 Q280,430 520,460 T1040,430 T1520,470 T1920,440 L1920,1080 L0,1080 Z" fill="url(#mtnFar)"/>
+
+  <!-- Distant Fog 1 -->
+  <ellipse cx="960" cy="530" rx="1100" ry="85" fill="url(#fogGrad)" filter="url(#softMist)"/>
+
+  <!-- Mountain Layer 2 -->
+  <path d="M0,580 Q220,500 480,530 T960,490 T1440,540 T1920,510 L1920,1080 L0,1080 Z" fill="url(#mtnMidFar)"/>
+
+  <!-- Valley Fog 2 -->
+  <ellipse cx="600" cy="610" rx="800" ry="90" fill="url(#fogGrad)" filter="url(#softMist)"/>
+  <ellipse cx="1400" cy="620" rx="750" ry="80" fill="url(#fogGrad)" filter="url(#softMist)"/>
+
+  <!-- Mountain Layer 3 -->
+  <path d="M0,660 Q340,570 700,610 T1380,590 T1920,640 L1920,1080 L0,1080 Z" fill="url(#mtnMid)"/>
+
+  <!-- Valley Fog 3 -->
+  <ellipse cx="960" cy="720" rx="1000" ry="110" fill="url(#fogGrad)" filter="url(#softMist)"/>
+
+  <!-- Mountain Layer 4 -->
+  <path d="M0,760 Q420,680 880,720 T1640,710 T1920,770 L1920,1080 L0,1080 Z" fill="url(#mtnNear)"/>
+
+  <!-- Foreground Rolling Hills & Meadow -->
+  <path d="M0,860 Q380,780 820,830 T1560,820 T1920,880 L1920,1080 L0,1080 Z" fill="url(#mtnForeground)"/>
+
+  <!-- Subtle Meadow Grass Texture & Highlights -->
+  <path d="M0,940 Q520,890 1100,930 T1920,950 L1920,1080 L0,1080 Z" fill="#415649" opacity="0.8"/>
+  
+  <!-- Final Atmospheric Haze -->
+  <rect y="700" width="100%" height="380" fill="url(#fogGrad)" opacity="0.45"/>
+</svg>

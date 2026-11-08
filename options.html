@@ -8,10 +8,10 @@
     :root {
       --bg-app: #090a0f;
       --bg-app-radial: radial-gradient(120% 85% at 50% -10%, #151928 0%, #0d0f17 50%, #08090d 100%);
-      --bg-surface: rgba(18, 21, 31, 0.85);
-      --bg-card: rgba(24, 28, 42, 0.65);
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-card-hover: rgba(99, 102, 241, 0.45);
+      --bg-surface: rgba(20, 22, 35, 0.42);
+      --bg-card: rgba(28, 32, 48, 0.38);
+      --border-subtle: rgba(255, 255, 255, 0.15);
+      --border-card-hover: rgba(99, 102, 241, 0.5);
       --accent-primary: #6366f1;
       --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       --accent-danger: #f43f5e;
@@ -21,13 +21,15 @@
       --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
       --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+      --glass-blur: blur(24px) saturate(180%);
+      --glass-blur-card: blur(16px) saturate(150%);
     }
     :root[data-theme="light"] {
-      --bg-app: #f6f7fa;
+      --bg-app: #f0f2f8;
       --bg-app-radial: radial-gradient(120% 85% at 50% -10%, #ffffff 0%, #f1f3f7 50%, #eaedf3 100%);
-      --bg-surface: rgba(255, 255, 255, 0.9);
-      --bg-card: rgba(255, 255, 255, 0.95);
-      --border-subtle: rgba(15, 23, 42, 0.08);
+      --bg-surface: rgba(255, 255, 255, 0.55);
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --border-subtle: rgba(255, 255, 255, 0.45);
       --border-card-hover: rgba(99, 102, 241, 0.5);
       --text-primary: #0f172a;
       --text-secondary: #334155;
@@ -79,20 +81,21 @@
     }
     .section-card {
       background: var(--bg-surface);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 16px;
       padding: 16px 20px;
       margin-bottom: 20px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 4px 16px -2px rgba(0, 0, 0, 0.35);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 32px -4px rgba(0, 0, 0, 0.2);
     }
     .setting-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 12px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
     .setting-row:last-child {
       border-bottom: none;
@@ -113,8 +116,10 @@
       margin-top: 2px;
     }
     select, input[type="number"], input[type="text"] {
-      background: rgba(12, 14, 21, 0.8);
-      border: 1px solid var(--border-subtle);
+      background: rgba(12, 14, 22, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: var(--text-primary);
       padding: 7px 12px;
       border-radius: 8px;
@@ -158,6 +163,11 @@
       margin-top: 24px;
       line-height: 1.5;
     }
+    :root[data-theme="light"] .privacy-notice {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #065f46;
+    }
   </style>
 </head>
 <body>
@@ -185,10 +195,10 @@
     <div class="section-card">
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Appearance Theme</div>
+          <label for="themeSelect" class="setting-title">Appearance Theme</label>
           <div class="setting-desc">Select dark, light, or follow system theme.</div>
         </div>
-        <select id="themeSelect">
+        <select id="themeSelect" aria-label="Appearance Theme">
           <option value="dark">Dark (Deep Obsidian)</option>
           <option value="light">Light (Clean Paper)</option>
           <option value="auto">Auto (System preference)</option>
@@ -197,11 +207,11 @@
 
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Board Wallpaper</div>
+          <label for="wallpaperSelect" class="setting-title">Board Wallpaper</label>
           <div class="setting-desc">Choose a bundled subtle gradient or upload your own image.</div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <select id="wallpaperSelect">
+          <select id="wallpaperSelect" aria-label="Board Wallpaper">
             <option value="none">None (Pure Obsidian)</option>
             <option value="gradient:sunset">Obsidian Sunset</option>
             <option value="gradient:space">Deep Space</option>
@@ -209,7 +219,7 @@
             <option value="gradient:violet">Midnight Violet</option>
             <option value="custom">Custom Uploaded Image</option>
           </select>
-          <input type="file" id="wallpaperUploadInput" accept="image/*" style="display: none;">
+          <input type="file" id="wallpaperUploadInput" accept="image/*" style="display: none;" aria-label="Upload custom wallpaper file" tabindex="-1">
           <button id="uploadWallpaperBtn" class="btn" style="padding: 4px 10px; font-size: 11px; display: none;">Upload Image</button>
         </div>
       </div>
@@ -220,8 +230,8 @@
           <div class="setting-desc">Adjust opacity dimming and background blur to preserve card text contrast.</div>
         </div>
         <div style="display: flex; gap: 12px; align-items: center;">
-          <label style="font-size: 11px;">Dim: <input type="range" id="wallpaperDim" min="0" max="80" value="40" style="vertical-align: middle;"></label>
-          <label style="font-size: 11px;">Blur: <input type="range" id="wallpaperBlur" min="0" max="20" value="0" style="vertical-align: middle;"></label>
+          <label style="font-size: 11px; cursor: pointer;">Dim: <input type="range" id="wallpaperDim" min="0" max="80" value="40" style="vertical-align: middle;" aria-label="Wallpaper dim percentage"></label>
+          <label style="font-size: 11px; cursor: pointer;">Blur: <input type="range" id="wallpaperBlur" min="0" max="20" value="0" style="vertical-align: middle;" aria-label="Wallpaper blur radius"></label>
         </div>
       </div>
     </div>
@@ -230,26 +240,26 @@
     <div class="section-card">
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Close Tab on Quick-Save</div>
+          <label for="closeTabOnQuickSave" class="setting-title" style="cursor: pointer;">Close Tab on Quick-Save</label>
           <div class="setting-desc">Close the active tab immediately after pressing Alt+Shift+S (window remains open if it is the last tab).</div>
         </div>
-        <input type="checkbox" id="closeTabOnQuickSave">
+        <input type="checkbox" id="closeTabOnQuickSave" aria-label="Close Tab on Quick-Save">
       </div>
 
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Open Links in New Tab</div>
+          <label for="openLinksInNewTab" class="setting-title" style="cursor: pointer;">Open Links in New Tab</label>
           <div class="setting-desc">Clicking a saved card opens in a new background tab instead of navigating the current tab.</div>
         </div>
-        <input type="checkbox" id="openLinksInNewTab">
+        <input type="checkbox" id="openLinksInNewTab" aria-label="Open Links in New Tab">
       </div>
 
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Duplicate Prevention Scope</div>
+          <label for="dedupeScope" class="setting-title">Duplicate Prevention Scope</label>
           <div class="setting-desc">Check for existing URLs before saving a card.</div>
         </div>
-        <select id="dedupeScope">
+        <select id="dedupeScope" aria-label="Duplicate Prevention Scope">
           <option value="workspace">Active Workspace (Recommended)</option>
           <option value="inbox">Inbox Column Only</option>
           <option value="all">Across All Workspaces</option>
@@ -258,18 +268,18 @@
 
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Strip Marketing Tracking Parameters</div>
+          <label for="stripTrackingParams" class="setting-title" style="cursor: pointer;">Strip Marketing Tracking Parameters</label>
           <div class="setting-desc">Automatically removes utm_*, fbclid, gclid, and other ad trackers before saving URLs.</div>
         </div>
-        <input type="checkbox" id="stripTrackingParams">
+        <input type="checkbox" id="stripTrackingParams" aria-label="Strip Marketing Tracking Parameters">
       </div>
 
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Extension Toolbar Icon Action</div>
+          <label for="toolbarClickAction" class="setting-title">Extension Toolbar Icon Action</label>
           <div class="setting-desc">What occurs when clicking the extension icon in the browser toolbar.</div>
         </div>
-        <select id="toolbarClickAction">
+        <select id="toolbarClickAction" aria-label="Extension Toolbar Icon Action">
           <option value="save-tab">Save Active Tab</option>
           <option value="save-window">Save Window Session</option>
           <option value="open-board">Open Minimal Board</option>
@@ -281,18 +291,18 @@
     <div class="section-card">
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Trash Retention (Days)</div>
+          <label for="trashRetentionDays" class="setting-title">Trash Retention (Days)</label>
           <div class="setting-desc">Deleted cards remain in trash before being permanently purged.</div>
         </div>
-        <input type="number" id="trashRetentionDays" min="1" max="365" style="width: 70px;">
+        <input type="number" id="trashRetentionDays" min="1" max="365" style="width: 70px;" aria-label="Trash Retention in Days">
       </div>
 
       <div class="setting-row">
         <div class="setting-info">
-          <div class="setting-title">Stale Card Age (Days)</div>
+          <label for="staleAfterDays" class="setting-title">Stale Card Age (Days)</label>
           <div class="setting-desc">Cards older than this without interaction will be flagged for Inbox review.</div>
         </div>
-        <input type="number" id="staleAfterDays" min="1" max="180" style="width: 70px;">
+        <input type="number" id="staleAfterDays" min="1" max="180" style="width: 70px;" aria-label="Stale Card Age in Days">
       </div>
     </div>
 

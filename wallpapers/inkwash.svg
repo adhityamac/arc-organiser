@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Rice Paper / Warm Parchment Background -->
+    <linearGradient id="paperBase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ebe3d3"/>
+      <stop offset="50%" stop-color="#e3dac8"/>
+      <stop offset="100%" stop-color="#dad0bd"/>
+    </linearGradient>
+
+    <!-- Ink Wash Mist & Gradients -->
+    <radialGradient id="inkMist" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#f5efe4" stop-opacity="0.85"/>
+      <stop offset="60%" stop-color="#ebe3d3" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#d8cdba" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="inkFar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8a8377" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#cfc7b8" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <linearGradient id="inkMid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4f4a43" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#8c8375" stop-opacity="0.85"/>
+    </linearGradient>
+
+    <linearGradient id="inkNear" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2d2a26"/>
+      <stop offset="100%" stop-color="#4a443c"/>
+    </linearGradient>
+
+    <filter id="inkSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <!-- Parchment Texture Background -->
+  <rect width="100%" height="100%" fill="url(#paperBase)"/>
+  <rect width="100%" height="100%" fill="url(#inkMist)"/>
+
+  <!-- Distant Mountain Peaks (Soft Brush Silhouette) -->
+  <path d="M0,450 Q240,320 540,390 T1080,310 T1620,380 T1920,330 L1920,1080 L0,1080 Z" fill="url(#inkFar)"/>
+  
+  <!-- Valley Wash Mist -->
+  <ellipse cx="880" cy="460" rx="900" ry="90" fill="#ebe2d0" filter="url(#inkSoft)" opacity="0.8"/>
+
+  <!-- Dramatic Middle Craggy Peak (Traditional Brush Stroke shape) -->
+  <path d="M1120,180 Q1220,130 1340,160 Q1450,280 1520,440 Q1680,520 1850,560 L1920,1080 L980,1080 Q1060,560 1120,180 Z" fill="url(#inkMid)"/>
+
+  <!-- Left Mountain Slopes -->
+  <path d="M0,580 Q280,480 620,540 T1180,620 L1920,720 L1920,1080 L0,1080 Z" fill="url(#inkMid)"/>
+
+  <!-- Low Valley Mist -->
+  <ellipse cx="640" cy="620" rx="800" ry="120" fill="#ede5d5" filter="url(#inkSoft)" opacity="0.9"/>
+  <ellipse cx="1400" cy="680" rx="650" ry="110" fill="#ede5d5" filter="url(#inkSoft)" opacity="0.85"/>
+
+  <!-- Foreground Mountain Ridge, Crag & Ancient Twisted Pine -->
+  <path d="M1200,540 Q1380,460 1620,510 T1920,620 L1920,1080 L1080,1080 Z" fill="url(#inkNear)"/>
+  
+  <!-- Silhouette of Twisted Pine Tree on Crag -->
+  <path d="M1360,540 Q1380,500 1350,470 Q1370,450 1420,460 Q1470,440 1480,470 Q1440,490 1450,520 Q1400,530 1360,540 Z" fill="#201e1b"/>
+  <path d="M1420,460 Q1460,420 1490,440 Q1530,420 1510,460 Z" fill="#24211e"/>
+
+  <!-- Foreground Winding Mountain Trail -->
+  <path d="M0,740 Q380,680 840,730 T1600,740 T1920,800 L1920,1080 L0,1080 Z" fill="url(#inkNear)"/>
+
+  <!-- Lone Wanderer Silhouette on Path -->
+  <ellipse cx="1220" cy="746" rx="4" ry="5" fill="#1b1a18"/>
+  <path d="M1214,752 L1226,752 L1224,778 L1216,778 Z" fill="#211f1c"/>
+  <line x1="1213" y1="755" x2="1210" y2="782" stroke="#1b1a18" stroke-width="1.8"/>
+
+  <!-- Ancient Paper Edge Soft Vignette -->
+  <radialGradient id="paperVignette" cx="50%" cy="50%" r="72%">
+    <stop offset="65%" stop-color="#000000" stop-opacity="0"/>
+    <stop offset="100%" stop-color="#4d4131" stop-opacity="0.25"/>
+  </radialGradient>
+  <rect width="100%" height="100%" fill="url(#paperVignette)"/>
+</svg>
