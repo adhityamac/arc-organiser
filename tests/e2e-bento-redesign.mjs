@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 const extensionPath = path.resolve(__dirname, '..');
 const screenshotPath = 'C:\\Users\\adhit\\.gemini\\antigravity\\brain\\a168fc65-96b4-419d-aad6-4f45b8dc2e04\\bento-redesign-preview.png';
 const activePillScreenshotPath = 'C:\\Users\\adhit\\.gemini\\antigravity\\brain\\a168fc65-96b4-419d-aad6-4f45b8dc2e04\\bento-redesign-active-pill.png';
+const lightScreenshotPath = 'C:\\Users\\adhit\\.gemini\\antigravity\\brain\\a168fc65-96b4-419d-aad6-4f45b8dc2e04\\bento-redesign-light.png';
 
 async function testBentoRedesign() {
   const edgePath = 'C:\\Program Files (x86)\\Microsoft\\EdgeCore\\157.0.4341.42\\msedge.exe';
@@ -100,6 +101,15 @@ async function testBentoRedesign() {
       console.log(`✔ Dynamic Live Pill active state: ${isLivePillActive}`);
       await page.screenshot({ path: activePillScreenshotPath });
       console.log(`✔ Active live pill preview screenshot saved to: ${activePillScreenshotPath}`);
+    }
+
+    // 6. Test Light Mode Toggle and Capture Light Theme Screenshot
+    const themeBtn = await page.$('#top-theme-btn');
+    if (themeBtn) {
+      await themeBtn.click();
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: lightScreenshotPath });
+      console.log(`✔ Light theme preview screenshot saved to: ${lightScreenshotPath}`);
     }
 
   } catch (err) {
