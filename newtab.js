@@ -127,8 +127,8 @@ function applyPalette(paletteId, notify = false) {
 const savedPalette = (typeof localStorage !== 'undefined' && localStorage.getItem('arc_palette')) || 'lavender';
 applyPalette(savedPalette);
 
-// Glass UI: Column color palette for subtle tinting
-const COLUMN_COLORS = ['pink', 'sage', 'cream', 'amber', 'lavender', 'sky', 'rose', 'mint'];
+// Acrylic UI: 8 vibrant acrylic color palette tints (amber, rose, sage, cream, lavender, sky, coral, mint)
+const COLUMN_COLORS = ['amber', 'rose', 'sage', 'cream', 'lavender', 'sky', 'coral', 'mint'];
 
 function triggerWallpaperModal() {
   const activeWs = (currentMeta?.workspaces || []).find((w) => w.id === currentMeta?.activeWorkspaceId);
@@ -424,6 +424,125 @@ if (floatingSettingsBtn) {
   });
 }
 
+// Unified Apple Dynamic Island Morphing Engine (Image 1)
+const dynamicIsland = document.getElementById('dynamic-island');
+const islandSearchTrigger = document.getElementById('island-search-trigger');
+const islandSearchInput = document.getElementById('island-search-input');
+const islandCloseBtn = document.getElementById('island-close-btn');
+const islandFocusBadges = document.querySelectorAll('.island-focus-badge');
+
+function expandDynamicIsland() {
+  if (!dynamicIsland) return;
+  dynamicIsland.classList.add('expanded');
+  const idle = dynamicIsland.querySelector('.island-idle');
+  const exp = dynamicIsland.querySelector('.island-expanded');
+  if (idle) idle.style.display = 'none';
+  if (exp) exp.style.display = 'flex';
+  if (islandSearchInput) {
+    islandSearchInput.focus();
+    islandSearchInput.select();
+  }
+}
+
+function collapseDynamicIsland() {
+  if (!dynamicIsland) return;
+  dynamicIsland.classList.remove('expanded');
+  const idle = dynamicIsland.querySelector('.island-idle');
+  const exp = dynamicIsland.querySelector('.island-expanded');
+  if (idle) idle.style.display = 'flex';
+  if (exp) exp.style.display = 'none';
+}
+
+if (islandSearchTrigger) {
+  islandSearchTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    expandDynamicIsland();
+  });
+}
+
+if (dynamicIsland) {
+  dynamicIsland.addEventListener('click', (e) => {
+    if (!dynamicIsland.classList.contains('expanded') && !e.target.closest('.island-focus-badge')) {
+      expandDynamicIsland();
+    }
+  });
+}
+
+if (islandCloseBtn) {
+  islandCloseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    collapseDynamicIsland();
+  });
+}
+
+if (islandSearchInput) {
+  islandSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = islandSearchInput.value.trim();
+      if (q) handleSearchAction(q);
+    } else if (e.key === 'Escape') {
+      collapseDynamicIsland();
+    }
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA')) {
+    e.preventDefault();
+    expandDynamicIsland();
+  } else if (e.key === 'Escape' && dynamicIsland?.classList.contains('expanded')) {
+    collapseDynamicIsland();
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (dynamicIsland?.classList.contains('expanded') && !dynamicIsland.contains(e.target)) {
+    collapseDynamicIsland();
+  }
+});
+
+// Focus Mode / Status Cycling (Image 1 style: WORK, PERSONAL, DEEP FOCUS)
+const FOCUS_MODES = [
+  { id: 'WORK', label: 'WORK', dotClass: 'dot-work', color: '#a855f7' },
+  { id: 'PERSONAL', label: 'PERSONAL', dotClass: 'dot-personal', color: '#38bdf8' },
+  { id: 'FOCUS', label: 'DEEP FOCUS', dotClass: 'dot-focus', color: '#34d399' },
+];
+
+function applyFocusModeUI(modeId) {
+  const mode = FOCUS_MODES.find(m => m.id === modeId || m.id.toLowerCase() === String(modeId).toLowerCase()) || FOCUS_MODES[0];
+  document.querySelectorAll('.island-focus-badge').forEach((badge) => {
+    badge.dataset.focus = mode.id;
+    const dot = badge.querySelector('.focus-dot');
+    const label = badge.querySelector('.focus-label');
+    if (dot) {
+      dot.className = `focus-dot ${mode.dotClass}`;
+    }
+    if (label) {
+      label.textContent = mode.label;
+    }
+  });
+}
+
+async function cycleFocusMode() {
+  const current = currentMeta?.settings?.focusMode || 'WORK';
+  const idx = FOCUS_MODES.findIndex(m => m.id === current || m.id.toLowerCase() === String(current).toLowerCase());
+  const next = FOCUS_MODES[(idx + 1) % FOCUS_MODES.length];
+  if (currentMeta) {
+    currentMeta.settings = currentMeta.settings || {};
+    currentMeta.settings.focusMode = next.id;
+    await chrome.storage.local.set({ meta: currentMeta });
+  }
+  applyFocusModeUI(next.id);
+  showToast(`Focus Mode: ${next.label}`);
+}
+
+islandFocusBadges.forEach((badge) => {
+  badge.addEventListener('click', (e) => {
+    e.stopPropagation();
+    cycleFocusMode();
+  });
+});
+
 if (floatingMenuBtn && quickMenuPopover) {
   floatingMenuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -616,7 +735,7 @@ if (railWorkspacesBtn) {
 
 if (railSearchBtn) {
   railSearchBtn.addEventListener('click', () => {
-    triggerSearchPalette();
+    expandDynamicIsland();
   });
 }
 
@@ -770,7 +889,7 @@ if (topWeatherChip) {
 }
 
 if (topSearchBtn) {
-  topSearchBtn.addEventListener('click', () => triggerSearchPalette());
+  topSearchBtn.addEventListener('click', () => expandDynamicIsland());
 }
 
 if (topThemeBtn) {
@@ -861,8 +980,8 @@ function initDynamicLivePill() {
     const monthStr = d.toLocaleDateString([], { month: 'short' });
     const dayStr = d.getDate();
 
-    if (timeSpan) timeSpan.textContent = timeStr;
-    if (dateSpan) dateSpan.textContent = `${weekdayStr}, ${monthStr} ${dayStr}`;
+    document.querySelectorAll('.live-pill-time').forEach((el) => { el.textContent = timeStr; });
+    document.querySelectorAll('.live-pill-date').forEach((el) => { el.textContent = `${weekdayStr}, ${monthStr} ${dayStr}`; });
   }
 
   function renderPomodoroOnPill(state) {
@@ -1792,12 +1911,21 @@ function attachBentoSnapResize(element, storageKey, defaultSpan = 't-1x2') {
  */
 function createColumnElement(col, cardsMap, workspaceId, layout) {
   const colEl = document.createElement('section');
-  colEl.className = 'column';
+  colEl.className = 'column physical-folder';
   colEl.dataset.colId = col.id;
 
   const colIndex = layout?.columnOrder ? layout.columnOrder.indexOf(col.id) : 0;
-  const colColor = col.color_tint || COLUMN_COLORS[(colIndex >= 0 ? colIndex : 0) % COLUMN_COLORS.length];
+  const colColor = col.color_tint || col.color || COLUMN_COLORS[(colIndex >= 0 ? colIndex : 0) % COLUMN_COLORS.length];
   colEl.dataset.color = colColor;
+  if (colColor && colColor.startsWith('#')) {
+    const hex = colColor.replace('#', '');
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      colEl.style.setProperty('--tint-rgb', `${r}, ${g}, ${b}`);
+    }
+  }
 
   const cardIds = col.cardIds || [];
   const isColEmpty = cardIds.length === 0;
@@ -1822,7 +1950,7 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
 
   // Header (Title top-left, subtitle line, Add link + and options ⋯ buttons)
   const header = document.createElement('header');
-  header.className = 'column-header';
+  header.className = 'column-header folder-tab-header';
 
   const left = document.createElement('div');
   left.className = 'col-header-left';
@@ -1980,9 +2108,9 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
 
   colEl.appendChild(header);
 
-  // Body: Flattened 36px bookmark rows (clipped if more than fit in tile height)
+  // Body: Flattened cards list inside folder cards sleeve
   const list = document.createElement('div');
-  list.className = 'cards-list';
+  list.className = 'cards-list folder-cards-sleeve';
 
   if (cardIds.length === 0) {
     const emptyHint = document.createElement('div');
@@ -2093,9 +2221,26 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   list.appendChild(inlineAddRow);
   colEl.appendChild(list);
 
-  // Footer (.tile-footer): Favicon stack on left, count badge on right (Phase 2: Step 6)
-  const footer = document.createElement('footer');
-  footer.className = 'tile-footer';
+  // Front Acrylic Pocket Lip Element (Phase 1: Physical Acrylic Glass Folder Columns)
+  const pocketLip = document.createElement('div');
+  pocketLip.className = 'folder-pocket-lip tile-footer';
+
+  const pocketTitleWrap = document.createElement('div');
+  pocketTitleWrap.className = 'folder-pocket-title-wrap';
+
+  const pocketTitle = document.createElement('span');
+  pocketTitle.className = 'folder-pocket-title';
+  pocketTitle.textContent = (col.title || 'UNTITLED').toUpperCase();
+  pocketTitle.title = 'Double-click to rename';
+  pocketTitle.tabIndex = 0;
+  pocketTitle.setAttribute('role', 'button');
+  pocketTitle.addEventListener('dblclick', startRename);
+
+  pocketTitleWrap.appendChild(pocketTitle);
+  pocketLip.appendChild(pocketTitleWrap);
+
+  const pocketMeta = document.createElement('div');
+  pocketMeta.className = 'folder-pocket-meta';
 
   const faviconStack = document.createElement('div');
   faviconStack.className = 'tile-favicon-stack';
@@ -2158,15 +2303,23 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
     faviconStack.appendChild(img);
   }
 
-  footer.appendChild(faviconStack);
+  pocketMeta.appendChild(faviconStack);
 
   const countBadge = document.createElement('span');
   countBadge.className = 'tile-count-badge';
   countBadge.textContent = String(cardIds.length);
   countBadge.title = `${cardIds.length} bookmarks`;
-  footer.appendChild(countBadge);
+  pocketMeta.appendChild(countBadge);
 
-  colEl.appendChild(footer);
+  const pocketArrow = document.createElement('span');
+  pocketArrow.className = 'folder-pocket-arrow';
+  pocketArrow.setAttribute('aria-hidden', 'true');
+  pocketArrow.textContent = '→';
+  pocketMeta.appendChild(pocketArrow);
+
+  pocketLip.appendChild(pocketMeta);
+
+  colEl.appendChild(pocketLip);
 
   // Snap-to-Bento Resize Handle (Phase 2: Step 4)
   attachBentoSnapResize(colEl, `arc_tile_span_${col.id}`, 't-1x2');
@@ -2527,6 +2680,12 @@ async function loadAndRender() {
       });
     }
 
+    applyFocusModeUI(currentMeta?.settings?.focusMode || 'WORK');
+    if (railTriageBadge) {
+      const inboxCol = (currentLayout?.columns || []).find(c => c.system === 'inbox' || c.id === 'col_inbox' || c.title?.toLowerCase() === 'inbox');
+      railTriageBadge.style.display = (inboxCol?.cardIds?.length > 0) ? 'block' : 'none';
+    }
+
     performance.mark('mbt_init_end');
     performance.measure('mbt_board_first_paint', 'mbt_init_start', 'mbt_init_end');
   } catch (err) {
@@ -2575,7 +2734,7 @@ window.addEventListener('keydown', (e) => {
 
   if (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) {
     e.preventDefault();
-    triggerSearchPalette();
+    expandDynamicIsland();
   } else if (e.key === 'r') {
     e.preventDefault();
     triggerTriage();

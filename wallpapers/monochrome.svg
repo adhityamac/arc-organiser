@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Deep Monochrome Sky & Atmosphere -->
+    <linearGradient id="monoSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#050608"/>
+      <stop offset="35%" stop-color="#0c0e12"/>
+      <stop offset="70%" stop-color="#181a20"/>
+      <stop offset="100%" stop-color="#2a2d36"/>
+    </linearGradient>
+
+    <!-- Celestial Moon / Silver Rim Ambient Glow -->
+    <radialGradient id="monoMoonGlow" cx="72%" cy="22%" r="48%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="25%" stop-color="#e2e8f0" stop-opacity="0.12"/>
+      <stop offset="60%" stop-color="#94a3b8" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Deep Mist & Fog Gradients -->
+    <linearGradient id="monoMist" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#242832" stop-opacity="0.75"/>
+      <stop offset="45%" stop-color="#16181f" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0c0e13" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="valleymist" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+    </linearGradient>
+
+    <!-- Mountain Layers (From distant silver haze to dark obsidian foreground) -->
+    <!-- Distant Silver Ridge -->
+    <linearGradient id="mtnSilverFar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#646b79" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#282c35" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <!-- Mid Mountain Ridge -->
+    <linearGradient id="mtnMid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3d424e"/>
+      <stop offset="60%" stop-color="#1c1f26"/>
+      <stop offset="100%" stop-color="#101217"/>
+    </linearGradient>
+
+    <!-- Close Craggy Peak -->
+    <linearGradient id="mtnClose" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#252932"/>
+      <stop offset="50%" stop-color="#14161b"/>
+      <stop offset="100%" stop-color="#08090b"/>
+    </linearGradient>
+
+    <!-- Foreground Obsidian Ridge -->
+    <linearGradient id="mtnForeground" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#171920"/>
+      <stop offset="40%" stop-color="#0d0e12"/>
+      <stop offset="100%" stop-color="#040405"/>
+    </linearGradient>
+
+    <!-- Fine Blur Filter for Atmospheric Depth -->
+    <filter id="mistBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="32"/>
+    </filter>
+  </defs>
+
+  <!-- Sky Canvas -->
+  <rect width="100%" height="100%" fill="url(#monoSky)"/>
+  <rect width="100%" height="100%" fill="url(#monoMoonGlow)"/>
+
+  <!-- Distant Stars (Subtle Silver Pinpoints) -->
+  <g fill="#ffffff" opacity="0.45">
+    <circle cx="180" cy="90" r="1.2"/>
+    <circle cx="340" cy="140" r="0.8"/>
+    <circle cx="510" cy="70" r="1.4"/>
+    <circle cx="680" cy="190" r="0.9"/>
+    <circle cx="890" cy="110" r="1.1"/>
+    <circle cx="1120" cy="65" r="1.3"/>
+    <circle cx="1320" cy="125" r="0.8"/>
+    <circle cx="1580" cy="85" r="1.2"/>
+    <circle cx="1740" cy="160" r="0.9"/>
+    <circle cx="980" cy="220" r="0.7"/>
+    <circle cx="1440" cy="190" r="1.0"/>
+  </g>
+
+  <!-- Crescent Moon / Silver Orb -->
+  <circle cx="1380" cy="240" r="42" fill="#f8fafc" opacity="0.92"/>
+  <circle cx="1394" cy="234" r="38" fill="#0d0e13" opacity="0.95"/>
+
+  <!-- Layer 1: Extreme Distant Mountain Crests (Silvery Horizon) -->
+  <path d="M0,520 Q320,380 640,460 T1280,390 T1920,440 L1920,1080 L0,1080 Z" fill="url(#mtnSilverFar)" opacity="0.55"/>
+  <path d="M0,520 Q320,380 640,460 T1280,390 T1920,440" stroke="#cbd5e1" stroke-width="1.2" fill="none" opacity="0.35"/>
+
+  <!-- Atmospheric Valley Fog 1 -->
+  <ellipse cx="960" cy="560" rx="1000" ry="120" fill="url(#valleymist)" filter="url(#mistBlur)"/>
+
+  <!-- Layer 2: Mid-Range Jagged Ridge -->
+  <path d="M0,590 L180,510 L360,560 L540,470 L780,550 L1020,440 L1260,530 L1520,460 L1740,520 L1920,480 L1920,1080 L0,1080 Z" fill="url(#mtnMid)"/>
+  <!-- Specular Light Highlights along ridge edge -->
+  <polyline points="0,590 180,510 360,560 540,470 780,550 1020,440 1260,530 1520,460 1740,520 1920,480" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.6"/>
+
+  <!-- Layer 3: Atmospheric Mist Separation -->
+  <rect x="0" y="520" width="100%" height="560" fill="url(#monoMist)"/>
+  <ellipse cx="500" cy="620" rx="600" ry="80" fill="#ffffff" opacity="0.06" filter="url(#mistBlur)"/>
+  <ellipse cx="1400" cy="640" rx="700" ry="90" fill="#ffffff" opacity="0.08" filter="url(#mistBlur)"/>
+
+  <!-- Layer 4: Dramatic Close Crag & Slopes -->
+  <path d="M0,690 Q220,600 480,670 Q760,560 1080,680 Q1380,590 1680,710 L1920,660 L1920,1080 L0,1080 Z" fill="url(#mtnClose)"/>
+  <path d="M0,690 Q220,600 480,670 Q760,560 1080,680 Q1380,590 1680,710 L1920,660" stroke="#64748b" stroke-width="1.8" fill="none" opacity="0.5"/>
+
+  <!-- Layer 5: Foreground Obsidian Silhouette with Pine Details -->
+  <path d="M0,820 Q300,740 600,810 Q940,730 1280,820 Q1600,760 1920,830 L1920,1080 L0,1080 Z" fill="url(#mtnForeground)"/>
+  <path d="M0,820 Q300,740 600,810 Q940,730 1280,820 Q1600,760 1920,830" stroke="#475569" stroke-width="1" fill="none" opacity="0.4"/>
+
+  <!-- Minimalist Pine Silhouettes on Lower Left & Right Slopes -->
+  <g fill="#040405" opacity="0.95">
+    <!-- Left grove -->
+    <polygon points="120,770 115,790 125,790"/>
+    <polygon points="120,760 116,775 124,775"/>
+    <polygon points="120,750 118,765 122,765"/>
+    <rect x="119" y="790" width="2" height="8"/>
+
+    <polygon points="150,755 144,780 156,780"/>
+    <polygon points="150,740 145,760 155,760"/>
+    <polygon points="150,730 147,745 153,745"/>
+    <rect x="149" y="780" width="2" height="10"/>
+
+    <polygon points="180,780 175,798 185,798"/>
+    <polygon points="180,768 176,785 184,785"/>
+    <rect x="179" y="798" width="2" height="6"/>
+
+    <!-- Right grove -->
+    <polygon points="1720,765 1714,790 1726,790"/>
+    <polygon points="1720,750 1715,770 1725,770"/>
+    <polygon points="1720,738 1717,755 1723,755"/>
+    <rect x="1719" y="790" width="2" height="10"/>
+
+    <polygon points="1750,780 1745,800 1755,800"/>
+    <polygon points="1750,768 1746,785 1754,785"/>
+    <rect x="1749" y="800" width="2" height="6"/>
+  </g>
+
+  <!-- Bottom Vignette for Superb Card Legibility -->
+  <linearGradient id="monoBottomFade" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+    <stop offset="60%" stop-color="#020304" stop-opacity="0.35"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0.75"/>
+  </linearGradient>
+  <rect y="600" width="100%" height="480" fill="url(#monoBottomFade)"/>
+</svg>
