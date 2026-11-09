@@ -55,15 +55,14 @@ async function testBentoRedesign() {
     assert.ok(topRight, 'Top bar right (weather/palette/search) must exist');
     console.log('✔ Top 3 floating chrome pieces verified');
 
-    // 2. Verify Bottom Floating Dock exists and Left Rail is hidden
+    // 2. Verify Bottom Floating Dock & Left Navigation Rail exist
     const bottomDock = await page.$('#bottom-dock');
     assert.ok(bottomDock, 'Bottom floating dock must exist');
     const rail = await page.$('#sidebar-rail');
-    if (rail) {
-      const railVisible = await rail.isVisible();
-      assert.strictEqual(railVisible, false, 'Sidebar rail must be hidden in favor of bottom dock');
-    }
-    console.log('✔ Bottom floating dock verified & left rail confirmed hidden');
+    assert.ok(rail, 'Sidebar rail must exist');
+    const dynamicIsland = await page.$('#dynamic-island');
+    assert.ok(dynamicIsland, 'Dynamic island must exist');
+    console.log('✔ Bottom floating dock, Left rail, and Dynamic Island verified');
 
     // 3. Verify Bento Grid Layout & Standard Anatomy
     const board = await page.$('#board-container');
