@@ -30,6 +30,10 @@ import {
   createCalendarCardElement,
   getEnabledWidgets,
   ALL_MARKMEZ_WIDGETS,
+  getPomodoroState,
+  subscribePomodoro,
+  togglePomodoroTimer,
+  stopPomodoroTimer,
 } from './lib/ui/widgets.js';
 import { openTriageMode } from './lib/ui/triage.js';
 import { getBlob } from './lib/db.js';
@@ -57,7 +61,27 @@ const floatingSettingsBtn = document.getElementById('floating-settings-btn');
 const floatingWallpaperBtn = document.getElementById('floating-wallpaper-btn');
 const quickMenuPopover = document.getElementById('quick-menu-popover');
 
-// Left sidebar glass navigation rail (Image 2 style)
+// Phase 4 Chrome Architecture: Top 3 Floating Glass Pieces
+const topChromeContainer = document.getElementById('top-chrome-container');
+const topBarLeft = document.getElementById('top-bar-left');
+const dynamicLivePill = document.getElementById('dynamic-live-pill');
+const topBarRight = document.getElementById('top-bar-right');
+const topWeatherChip = document.getElementById('top-weather-chip');
+const topSearchBtn = document.getElementById('top-search-btn');
+const topThemeBtn = document.getElementById('top-theme-btn');
+const topPaletteBtn = document.getElementById('top-palette-btn');
+const topSettingsBtn = document.getElementById('top-settings-btn');
+const palettePickerPopover = document.getElementById('palette-picker-popover');
+
+// Phase 4 Chrome Architecture: Bottom Floating Glass Dock
+const bottomDock = document.getElementById('bottom-dock');
+const dockWorkspaces = document.getElementById('dock-workspaces');
+const dockAddBookmarkBtn = document.getElementById('dock-add-bookmark-btn');
+const dockDrawerBtn = document.getElementById('dock-drawer-btn');
+const dockWallpaperBtn = document.getElementById('dock-wallpaper-btn');
+const dockAddColumnBtn = document.getElementById('dock-add-column-btn');
+
+// Backward compatibility references
 const railBrandBtn = document.getElementById('rail-brand-btn');
 const railWorkspacesBtn = document.getElementById('rail-workspaces-btn');
 const railSearchBtn = document.getElementById('rail-search-btn');
@@ -69,6 +93,39 @@ const railThemeBtn = document.getElementById('rail-theme-btn');
 const railSettingsBtn = document.getElementById('rail-settings-btn');
 const railProfileBtn = document.getElementById('rail-profile-btn');
 const railTriageBadge = document.getElementById('rail-triage-badge');
+
+// Curated Pastel Themes (Lavender Iris, Matcha Green, Sky Dawn, Coral Blush)
+const CURATED_PALETTES = [
+  { id: 'lavender', name: 'Lavender Iris', emoji: '🪻', color: '#874a8a' },
+  { id: 'matcha', name: 'Matcha Green', emoji: '🍵', color: '#4e7e58' },
+  { id: 'sky', name: 'Sky Dawn', emoji: '🌊', color: '#3b789e' },
+  { id: 'coral', name: 'Coral Blush', emoji: '🪸', color: '#9c4e4e' },
+];
+
+function applyPalette(paletteId, notify = false) {
+  const valid = CURATED_PALETTES.some((p) => p.id === paletteId) ? paletteId : 'lavender';
+  document.documentElement.dataset.palette = valid;
+  try {
+    localStorage.setItem('arc_palette', valid);
+  } catch {}
+  if (currentMeta) {
+    currentMeta.settings = currentMeta.settings || {};
+    currentMeta.settings.palette = valid;
+  }
+  if (palettePickerPopover) {
+    palettePickerPopover.querySelectorAll('.palette-option-item').forEach((item) => {
+      item.classList.toggle('active', item.dataset.palette === valid);
+    });
+  }
+  if (notify) {
+    const pal = CURATED_PALETTES.find((p) => p.id === valid);
+    showToast(`Palette: ${pal.name} ${pal.emoji}`);
+  }
+}
+
+// Initial palette application immediately
+const savedPalette = (typeof localStorage !== 'undefined' && localStorage.getItem('arc_palette')) || 'lavender';
+applyPalette(savedPalette);
 
 // Glass UI: Column color palette for subtle tinting
 const COLUMN_COLORS = ['pink', 'sage', 'cream', 'amber', 'lavender', 'sky', 'rose', 'mint'];
@@ -110,6 +167,23 @@ function triggerTriage() {
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
+  syncThemeIcons(theme);
+}
+
+function syncThemeIcons(theme) {
+  const sunIcon = topThemeBtn?.querySelector('.theme-icon-sun');
+  const moonIcon = topThemeBtn?.querySelector('.theme-icon-moon');
+  if (sunIcon && moonIcon) {
+    if (theme === 'dark') {
+      sunIcon.style.display = 'block';
+      moonIcon.style.display = 'none';
+      topThemeBtn.title = 'Switch to Light Mode';
+    } else {
+      sunIcon.style.display = 'none';
+      moonIcon.style.display = 'block';
+      topThemeBtn.title = 'Switch to Dark Mode';
+    }
+  }
 }
 
 function applyViewMode() {
@@ -562,32 +636,377 @@ if (railDrawerBtn) {
   });
 }
 
-if (railAddColumnBtn) {
-  railAddColumnBtn.addEventListener('click', async () => {
-    const title = prompt('Enter new column title:');
-    if (!title || !title.trim()) return;
-    const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
-    const wsKey = `ws:${activeWsId}`;
-    const colId = `col_${Date.now()}`;
-    await transaction([wsKey], (shards) => {
-      const layout = shards[wsKey] || createDefaultWorkspaceLayout(activeWsId);
-      layout.columnOrder = layout.columnOrder || [];
-      layout.columns = layout.columns || {};
-      layout.columnOrder.push(colId);
-      layout.columns[colId] = {
-        id: colId,
-        title: title.trim(),
-        color: '#556b2f',
-        emoji: '📌',
-        collapsed: false,
-        sort: 'manual',
-        cardIds: [],
-      };
-      return { [wsKey]: layout };
-    });
-    loadAndRender();
-    showToast(`Column "${title.trim()}" added`);
+async function promptAddColumn(targetWsId) {
+  const title = prompt('Enter new collection title:');
+  if (!title || !title.trim()) return;
+  const activeWsId = targetWsId || currentMeta?.activeWorkspaceId || 'ws_default';
+  const wsKey = `ws:${activeWsId}`;
+  const colId = `col_${Date.now()}`;
+  await transaction([wsKey], (shards) => {
+    const layout = shards[wsKey] || createDefaultWorkspaceLayout(activeWsId);
+    layout.columnOrder = layout.columnOrder || [];
+    layout.columns = layout.columns || {};
+    layout.columnOrder.push(colId);
+    layout.columns[colId] = {
+      id: colId,
+      title: title.trim(),
+      color: '#556b2f',
+      emoji: '📌',
+      collapsed: false,
+      sort: 'manual',
+      cardIds: [],
+    };
+    return { [wsKey]: layout };
   });
+  loadAndRender();
+  showToast(`Collection "${title.trim()}" added`);
+}
+
+async function promptAddBookmark(targetWsId) {
+  const url = prompt('Enter bookmark URL:');
+  if (!url || !url.trim()) return;
+  let formattedUrl = url.trim();
+  if (/^[\w-]+(\.[\w-]+)+/.test(formattedUrl) && !/^https?:\/\//i.test(formattedUrl)) {
+    formattedUrl = `https://${formattedUrl}`;
+  } else if (!/^https?:\/\//i.test(formattedUrl)) {
+    formattedUrl = `https://www.google.com/search?q=${encodeURIComponent(formattedUrl)}`;
+  }
+  let title = formattedUrl;
+  try {
+    const parsed = new URL(formattedUrl);
+    title = parsed.hostname.replace(/^www\./, '');
+  } catch {}
+  const userTitle = prompt('Enter bookmark title (optional):', title);
+  if (userTitle !== null && userTitle.trim()) {
+    title = userTitle.trim();
+  }
+  const activeWsId = targetWsId || currentMeta?.activeWorkspaceId || 'ws_default';
+  await saveCard({
+    title,
+    url: formattedUrl,
+    workspaceId: activeWsId,
+  });
+  showToast(`Bookmark added: ${title}`);
+  loadAndRender();
+}
+
+// Bottom Dock Interactions
+if (dockAddBookmarkBtn) {
+  dockAddBookmarkBtn.addEventListener('click', () => promptAddBookmark());
+}
+
+if (dockDrawerBtn) {
+  dockDrawerBtn.addEventListener('click', () => {
+    toggleTabDrawer(
+      () => currentMeta?.activeWorkspaceId || 'ws_default',
+      showToast,
+      loadAndRender
+    );
+  });
+}
+
+if (dockWallpaperBtn) {
+  dockWallpaperBtn.addEventListener('click', triggerWallpaperModal);
+}
+
+if (dockAddColumnBtn) {
+  dockAddColumnBtn.addEventListener('click', () => promptAddColumn());
+}
+
+// Top Bar Right Interactions
+async function updateWeatherChip() {
+  if (!topWeatherChip) return;
+  const tempSpan = topWeatherChip.querySelector('.weather-temp');
+  const iconSpan = topWeatherChip.querySelector('.weather-icon');
+
+  const city = currentMeta?.settings?.weatherCity || 'New York';
+  const unit = currentMeta?.settings?.weatherUnit || 'F';
+  try {
+    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`;
+    const geoRes = await fetch(geoUrl);
+    const geoData = await geoRes.json();
+    if (geoData?.results?.[0]) {
+      const { latitude, longitude, name } = geoData.results[0];
+      const wxUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+      const wxRes = await fetch(wxUrl);
+      const wxData = await wxRes.json();
+      if (wxData?.current_weather) {
+        let temp = wxData.current_weather.temperature;
+        if (unit === 'F') temp = Math.round((temp * 9) / 5 + 32);
+        else temp = Math.round(temp);
+
+        const code = wxData.current_weather.weathercode;
+        let icon = '☀️';
+        if ([1, 2].includes(code)) icon = '⛅';
+        else if ([3].includes(code)) icon = '☁️';
+        else if ([45, 48].includes(code)) icon = '🌫️';
+        else if (code >= 51 && code <= 67) icon = '🌧️';
+        else if (code >= 71 && code <= 77) icon = '🌨️';
+        else if (code >= 80 && code <= 82) icon = '🌦️';
+        else if (code >= 95) icon = '⛈️';
+
+        if (tempSpan) tempSpan.textContent = `${temp}°`;
+        if (iconSpan) iconSpan.textContent = icon;
+        topWeatherChip.title = `${name}: ${temp}°${unit} (Click to change location)`;
+      }
+    }
+  } catch {
+    // Keep fallback
+  }
+}
+
+if (topWeatherChip) {
+  topWeatherChip.addEventListener('click', () => {
+    const currentCity = currentMeta?.settings?.weatherCity || 'New York';
+    const newCity = prompt('Enter city for weather forecast:', currentCity);
+    if (newCity !== null && newCity.trim()) {
+      currentMeta.settings = currentMeta.settings || {};
+      currentMeta.settings.weatherCity = newCity.trim();
+      chrome.storage.local.set({ meta: currentMeta });
+      updateWeatherChip();
+      showToast(`Weather location set to ${newCity.trim()}`);
+    }
+  });
+}
+
+if (topSearchBtn) {
+  topSearchBtn.addEventListener('click', () => triggerSearchPalette());
+}
+
+if (topThemeBtn) {
+  topThemeBtn.addEventListener('click', async () => {
+    const currentTheme = currentMeta?.settings?.theme || document.documentElement.dataset.theme || 'dark';
+    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    currentMeta.settings = currentMeta.settings || {};
+    currentMeta.settings.theme = nextTheme;
+    applyTheme(nextTheme);
+    await chrome.storage.local.set({ meta: currentMeta });
+    showToast(`Theme: ${nextTheme === 'dark' ? 'Dark Mode' : 'Light Mode'}`);
+  });
+}
+
+if (topPaletteBtn && palettePickerPopover) {
+  topPaletteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isShown = palettePickerPopover.style.display !== 'none';
+    palettePickerPopover.style.display = isShown ? 'none' : 'block';
+  });
+
+  palettePickerPopover.querySelectorAll('.palette-option-item').forEach((item) => {
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const pal = item.dataset.palette;
+      applyPalette(pal, true);
+      palettePickerPopover.style.display = 'none';
+      if (currentMeta) {
+        await chrome.storage.local.set({ meta: currentMeta });
+      }
+    });
+  });
+
+  window.addEventListener('click', (e) => {
+    if (!palettePickerPopover.contains(e.target) && e.target !== topPaletteBtn) {
+      palettePickerPopover.style.display = 'none';
+    }
+  });
+}
+
+if (topSettingsBtn) {
+  topSettingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!quickMenuPopover) return;
+    const isVisible = quickMenuPopover.style.display !== 'none';
+    quickMenuPopover.style.display = isVisible ? 'none' : 'flex';
+  });
+}
+
+const menuPaletteToggle = document.getElementById('menu-palette-toggle');
+if (menuPaletteToggle) {
+  menuPaletteToggle.addEventListener('click', async () => {
+    const currentPal = document.documentElement.dataset.palette || 'lavender';
+    const palIdx = CURATED_PALETTES.findIndex((p) => p.id === currentPal);
+    const nextPal = CURATED_PALETTES[(palIdx + 1) % CURATED_PALETTES.length].id;
+    applyPalette(nextPal, true);
+    if (currentMeta) {
+      await chrome.storage.local.set({ meta: currentMeta });
+    }
+  });
+}
+
+// Dynamic Live Pill State Controller
+let livePillInterval = null;
+let currentPomodoroState = { isRunning: false, secondsLeft: 25 * 60, totalSeconds: 25 * 60, mode: 'focus' };
+let livePillRestView = 'clock'; // 'clock' | 'timer'
+
+function initDynamicLivePill() {
+  if (!dynamicLivePill) return;
+
+  const restWrap = dynamicLivePill.querySelector('.live-pill-rest');
+  const activeWrap = dynamicLivePill.querySelector('.live-pill-active');
+  const timeSpan = dynamicLivePill.querySelector('.live-pill-time');
+  const dateSpan = dynamicLivePill.querySelector('.live-pill-date');
+  const digitsSpan = dynamicLivePill.querySelector('.live-pill-digits');
+  const modeSpan = dynamicLivePill.querySelector('.live-pill-mode');
+  const ringFill = dynamicLivePill.querySelector('.live-ring-fill');
+  const toggleBtn = document.getElementById('live-pill-toggle-btn');
+  const stopBtn = document.getElementById('live-pill-stop-btn');
+  const playIcon = toggleBtn?.querySelector('.icon-play');
+  const pauseIcon = toggleBtn?.querySelector('.icon-pause');
+
+  function updateClockDisplay() {
+    if (currentPomodoroState.isRunning) return;
+    const d = new Date();
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    const weekdayStr = d.toLocaleDateString([], { weekday: 'short' });
+    const monthStr = d.toLocaleDateString([], { month: 'short' });
+    const dayStr = d.getDate();
+
+    if (timeSpan) timeSpan.textContent = timeStr;
+    if (dateSpan) dateSpan.textContent = `${weekdayStr}, ${monthStr} ${dayStr}`;
+  }
+
+  function renderPomodoroOnPill(state) {
+    currentPomodoroState = state;
+    const { isRunning, secondsLeft, totalSeconds, mode } = state;
+
+    if (isRunning) {
+      dynamicLivePill.classList.add('is-pomo-active');
+      if (restWrap) restWrap.style.display = 'none';
+      if (activeWrap) activeWrap.style.display = 'flex';
+
+      const m = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+      const s = String(secondsLeft % 60).padStart(2, '0');
+      if (digitsSpan) digitsSpan.textContent = `${m}:${s}`;
+      if (modeSpan) modeSpan.textContent = mode === 'focus' ? 'FOCUS' : (mode === 'short' ? 'SHORT BREAK' : 'LONG BREAK');
+
+      const circumference = 56.55;
+      const progressRatio = totalSeconds > 0 ? (secondsLeft / totalSeconds) : 0;
+      const strokeOffset = circumference * (1 - progressRatio);
+      if (ringFill) {
+        ringFill.style.strokeDashoffset = `${strokeOffset}px`;
+      }
+
+      if (playIcon) playIcon.style.display = 'none';
+      if (pauseIcon) pauseIcon.style.display = 'block';
+      if (toggleBtn) toggleBtn.title = 'Pause Timer';
+    } else {
+      if (livePillRestView === 'timer') {
+        dynamicLivePill.classList.add('is-pomo-active');
+        if (restWrap) restWrap.style.display = 'none';
+        if (activeWrap) activeWrap.style.display = 'flex';
+
+        const m = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+        const s = String(secondsLeft % 60).padStart(2, '0');
+        if (digitsSpan) digitsSpan.textContent = `${m}:${s}`;
+        if (modeSpan) modeSpan.textContent = mode === 'focus' ? 'FOCUS' : (mode === 'short' ? 'SHORT BREAK' : 'LONG BREAK');
+
+        if (playIcon) playIcon.style.display = 'block';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+        if (toggleBtn) toggleBtn.title = 'Start Timer';
+      } else {
+        dynamicLivePill.classList.remove('is-pomo-active');
+        if (restWrap) restWrap.style.display = 'flex';
+        if (activeWrap) activeWrap.style.display = 'none';
+        updateClockDisplay();
+      }
+    }
+  }
+
+  // Update clock every second
+  updateClockDisplay();
+  if (livePillInterval) clearInterval(livePillInterval);
+  livePillInterval = setInterval(updateClockDisplay, 1000);
+
+  // Subscribe to Pomodoro updates from widgets subsystem
+  subscribePomodoro(renderPomodoroOnPill);
+
+  // Toggle play/pause
+  toggleBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePomodoroTimer();
+  });
+
+  // Stop/dismiss timer
+  stopBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    stopPomodoroTimer();
+    livePillRestView = 'clock';
+    renderPomodoroOnPill(getPomodoroState());
+  });
+
+  // Clicking pill toggles between clock and timer controls
+  dynamicLivePill.addEventListener('click', (e) => {
+    if (e.target.closest('#live-pill-toggle-btn') || e.target.closest('#live-pill-stop-btn')) {
+      return;
+    }
+    if (currentPomodoroState.isRunning) {
+      livePillRestView = livePillRestView === 'clock' ? 'timer' : 'clock';
+      if (livePillRestView === 'clock') {
+        dynamicLivePill.classList.remove('is-pomo-active');
+        if (restWrap) restWrap.style.display = 'flex';
+        if (activeWrap) activeWrap.style.display = 'none';
+        updateClockDisplay();
+      } else {
+        renderPomodoroOnPill(currentPomodoroState);
+      }
+    } else {
+      livePillRestView = livePillRestView === 'clock' ? 'timer' : 'clock';
+      renderPomodoroOnPill(getPomodoroState());
+    }
+  });
+}
+
+// Bottom Dock Workspaces Renderer
+function renderBottomDock(meta) {
+  if (!dockWorkspaces) return;
+  dockWorkspaces.innerHTML = '';
+
+  const workspaces = meta?.workspaces || [
+    { id: 'ws_default', name: 'Home', icon: '🏠' },
+    { id: 'ws_work', name: 'Work', icon: '💼' },
+    { id: 'ws_projects', name: 'Projects', icon: '🚀' },
+  ];
+  const activeWsId = meta?.activeWorkspaceId || 'ws_default';
+
+  for (const ws of workspaces) {
+    const isActive = ws.id === activeWsId;
+    const item = document.createElement('button');
+    item.className = `dock-item dock-ws-item ${isActive ? 'active' : ''}`;
+    item.dataset.wsId = ws.id;
+    item.setAttribute('role', 'tab');
+    item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    item.setAttribute('aria-label', `Workspace: ${ws.name}`);
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'dock-icon dock-ws-icon';
+    iconSpan.textContent = ws.icon || '🏠';
+    item.appendChild(iconSpan);
+
+    const dot = document.createElement('span');
+    dot.className = 'dock-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    item.appendChild(dot);
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'dock-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.textContent = ws.name || 'Workspace';
+    item.appendChild(tooltip);
+
+    item.addEventListener('click', async () => {
+      if (ws.id === meta.activeWorkspaceId) return;
+      meta.activeWorkspaceId = ws.id;
+      await chrome.storage.local.set({ meta });
+      loadAndRender();
+      showToast(`Workspace: ${ws.name}`);
+    });
+
+    dockWorkspaces.appendChild(item);
+  }
+}
+
+if (railAddColumnBtn) {
+  railAddColumnBtn.addEventListener('click', () => promptAddColumn());
 }
 
 if (railViewModeBtn) {
@@ -832,7 +1251,8 @@ function renderWorkspaceTabs(meta) {
   if (!workspaces || workspaces.length === 0) {
     workspaces = [
       { id: 'ws_default', name: 'Home', icon: '🏠', order: 0 },
-      { id: 'ws_projects', name: 'Projects', icon: '💼', order: 1 },
+      { id: 'ws_work', name: 'Work', icon: '💼', order: 1 },
+      { id: 'ws_projects', name: 'Projects', icon: '🚀', order: 2 },
     ];
     if (meta) meta.workspaces = workspaces;
     didUpdate = true;
@@ -842,12 +1262,23 @@ function renderWorkspaceTabs(meta) {
       workspaces[0].icon = '🏠';
       didUpdate = true;
     }
+    if (!workspaces.some((w) => w.id === 'ws_work' || w.name === 'Work')) {
+      workspaces.splice(1, 0, {
+        id: 'ws_work',
+        parentId: null,
+        name: 'Work',
+        icon: '💼',
+        order: 1,
+      });
+      workspaces.forEach((w, idx) => { w.order = idx; });
+      didUpdate = true;
+    }
     if (!workspaces.some((w) => w.id === 'ws_projects' || w.name === 'Projects')) {
       workspaces.push({
         id: 'ws_projects',
         parentId: null,
         name: 'Projects',
-        icon: '💼',
+        icon: '🚀',
         order: workspaces.length,
       });
       didUpdate = true;
@@ -919,6 +1350,7 @@ function renderWorkspaceTabs(meta) {
   }
   requestAnimationFrame(updateSliderPill);
   window.addEventListener('resize', updateSliderPill, { passive: true });
+  renderBottomDock(meta);
 }
 
 /**
@@ -1205,7 +1637,158 @@ function createCardElement(card, workspaceId) {
 }
 
 /**
- * Builds a category column DOM element with its cards.
+ * Bento Grid tile size spans.
+ */
+const BENTO_SPANS = ['t-1x2', 't-2x2', 't-1x1', 't-2x1'];
+
+/**
+ * Attaches snap-to-bento resizing and cycling logic to a tile (column or widget).
+ */
+function attachBentoSnapResize(element, storageKey, defaultSpan = 't-1x2') {
+  const handle = document.createElement('div');
+  handle.className = 'col-resize-handle';
+  handle.title = 'Click to cycle size, drag to snap, double-click to reset';
+  handle.setAttribute('aria-label', 'Resize tile');
+  handle.innerHTML = `
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <path d="M8 2L2 8M9 5L5 9M9 8L8 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+  `;
+
+  function getCurrentSpan() {
+    for (const s of BENTO_SPANS) {
+      if (element.classList.contains(s)) return s;
+    }
+    return defaultSpan;
+  }
+
+  function setSpan(newSpan, save = true) {
+    for (const s of BENTO_SPANS) {
+      element.classList.remove(s);
+    }
+    element.classList.add(newSpan);
+    element.style.height = '';
+    element.style.maxHeight = '';
+    element.style.width = '';
+    element.style.maxWidth = '';
+    if (save && storageKey) {
+      try {
+        localStorage.setItem(storageKey, newSpan);
+      } catch {}
+    }
+  }
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let hasDragged = false;
+  let dragStartSpan = defaultSpan;
+
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    startX = e.clientX;
+    startY = e.clientY;
+    hasDragged = false;
+    isDragging = true;
+    dragStartSpan = getCurrentSpan();
+
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch {}
+    element.classList.add('is-resizing');
+
+    function onPointerMove(moveEvent) {
+      if (!isDragging) return;
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+
+      if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
+        hasDragged = true;
+      }
+
+      // Discrete snap logic (Step 4 of redesign plan):
+      // Drag right (> 100px) -> span 2 columns (t-2x2 or t-2x1)
+      // Drag down (> 100px) -> span 2 rows (t-1x2 or t-2x2)
+      let previewSpan = dragStartSpan;
+      const wants2Cols = deltaX > 100;
+      const wants1Col = deltaX < -80;
+      const wants2Rows = deltaY > 100;
+      const wants1Row = deltaY < -80;
+
+      if (wants2Cols && wants2Rows) {
+        previewSpan = 't-2x2';
+      } else if (wants2Cols) {
+        const is2Rows = dragStartSpan === 't-1x2' || dragStartSpan === 't-2x2';
+        previewSpan = is2Rows ? 't-2x2' : 't-2x1';
+      } else if (wants2Rows) {
+        const is2Cols = dragStartSpan === 't-2x1' || dragStartSpan === 't-2x2';
+        previewSpan = is2Cols ? 't-2x2' : 't-1x2';
+      } else if (wants1Col && wants1Row) {
+        previewSpan = 't-1x1';
+      } else if (wants1Col) {
+        const is2Rows = dragStartSpan === 't-1x2' || dragStartSpan === 't-2x2';
+        previewSpan = is2Rows ? 't-1x2' : 't-1x1';
+      } else if (wants1Row) {
+        const is2Cols = dragStartSpan === 't-2x1' || dragStartSpan === 't-2x2';
+        previewSpan = is2Cols ? 't-2x1' : 't-1x1';
+      }
+
+      if (previewSpan !== getCurrentSpan()) {
+        for (const s of BENTO_SPANS) {
+          element.classList.remove(s);
+        }
+        element.classList.add(previewSpan);
+      }
+    }
+
+    function onPointerUp(upEvent) {
+      if (!isDragging) return;
+      isDragging = false;
+      try {
+        handle.releasePointerCapture(upEvent.pointerId);
+      } catch {}
+      element.classList.remove('is-resizing');
+      handle.removeEventListener('pointermove', onPointerMove);
+      handle.removeEventListener('pointerup', onPointerUp);
+
+      if (hasDragged) {
+        const finalSpan = getCurrentSpan();
+        setSpan(finalSpan, true);
+        showToast(`Snapped to ${finalSpan.replace('t-', '')}`);
+      } else {
+        // Handle click: cycle through [ 't-1x2', 't-2x2', 't-1x1', 't-2x1' ]
+        const cur = getCurrentSpan();
+        const curIdx = BENTO_SPANS.indexOf(cur);
+        const nextSpan = BENTO_SPANS[(curIdx >= 0 ? curIdx + 1 : 0) % BENTO_SPANS.length];
+        setSpan(nextSpan, true);
+        showToast(`Tile size: ${nextSpan.replace('t-', '')}`);
+      }
+    }
+
+    handle.addEventListener('pointermove', onPointerMove);
+    handle.addEventListener('pointerup', onPointerUp);
+  });
+
+  // Double click resets to default (defaultSpan = 't-1x2' for collections)
+  handle.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setSpan(defaultSpan, false);
+    if (storageKey) {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {}
+    }
+    showToast(`Tile size reset to ${defaultSpan.replace('t-', '')}`);
+  });
+
+  element.appendChild(handle);
+}
+
+/**
+ * Builds a category collection tile DOM element with standard anatomy (Phase 2: Step 6).
  */
 function createColumnElement(col, cardsMap, workspaceId, layout) {
   const colEl = document.createElement('section');
@@ -1216,12 +1799,43 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   const colColor = col.color_tint || COLUMN_COLORS[(colIndex >= 0 ? colIndex : 0) % COLUMN_COLORS.length];
   colEl.dataset.color = colColor;
 
-  // Header
+  const cardIds = col.cardIds || [];
+  const isColEmpty = cardIds.length === 0;
+  if (isColEmpty) {
+    colEl.classList.add('is-empty-col');
+  }
+
+  // Restore saved tile span or resolve default (t-1x2 for normal, t-1x1 for empty)
+  const savedSpan = (() => {
+    try {
+      return (
+        localStorage.getItem(`arc_tile_span_${col.id}`) ||
+        (localStorage.getItem(`arc_col_span_${col.id}`) === '2' ? 't-2x2' : null)
+      );
+    } catch {
+      return null;
+    }
+  })();
+  const defaultSpan = isColEmpty ? 't-1x1' : 't-1x2';
+  const initialSpan = savedSpan && BENTO_SPANS.includes(savedSpan) ? savedSpan : defaultSpan;
+  colEl.classList.add(initialSpan);
+
+  // Header (Title top-left, subtitle line, Add link + and options ⋯ buttons)
   const header = document.createElement('header');
   header.className = 'column-header';
 
   const left = document.createElement('div');
   left.className = 'col-header-left';
+
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'col-title-wrap';
+
+  if (colColor) {
+    const dot = document.createElement('span');
+    dot.className = 'col-color-dot';
+    dot.style.background = colColor;
+    titleWrap.appendChild(dot);
+  }
 
   const title = document.createElement('h2');
   title.className = 'col-title';
@@ -1268,7 +1882,14 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   };
 
   title.addEventListener('dblclick', startRename);
-  left.appendChild(title);
+  titleWrap.appendChild(title);
+  left.appendChild(titleWrap);
+
+  const subtitle = document.createElement('span');
+  subtitle.className = 'col-subtitle';
+  subtitle.textContent = `${cardIds.length} bookmark${cardIds.length === 1 ? '' : 's'}`;
+  left.appendChild(subtitle);
+
   header.appendChild(left);
 
   const right = document.createElement('div');
@@ -1359,11 +1980,10 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
 
   colEl.appendChild(header);
 
-  // Cards List
+  // Body: Flattened 36px bookmark rows (clipped if more than fit in tile height)
   const list = document.createElement('div');
   list.className = 'cards-list';
 
-  const cardIds = col.cardIds || [];
   if (cardIds.length === 0) {
     const emptyHint = document.createElement('div');
     emptyHint.className = 'empty-column-hint';
@@ -1378,9 +1998,7 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
     }
   }
 
-  colEl.appendChild(list);
-
-  // Inline Ghost Row at bottom of list (+ Add bookmark)
+  // Inline Ghost Row inside list (+ Add bookmark)
   const inlineAddRow = document.createElement('div');
   inlineAddRow.className = 'inline-add-row';
 
@@ -1472,96 +2090,86 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
     }
   });
 
-  colEl.appendChild(inlineAddRow);
+  list.appendChild(inlineAddRow);
+  colEl.appendChild(list);
 
-  // Universal Column Resize Grip (Allows free-form vertical resizing & 2x column span)
-  const colResizeHandle = document.createElement('div');
-  colResizeHandle.className = 'col-resize-handle';
-  colResizeHandle.title = 'Drag to resize column (Double-click to reset)';
-  colResizeHandle.setAttribute('aria-label', 'Resize column');
-  colResizeHandle.innerHTML = `
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-      <path d="M8 2L2 8M9 5L5 9M9 8L8 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-    </svg>
-  `;
+  // Footer (.tile-footer): Favicon stack on left, count badge on right (Phase 2: Step 6)
+  const footer = document.createElement('footer');
+  footer.className = 'tile-footer';
 
-  // Restore saved column dimensions if any
-  try {
-    const savedColHeight = localStorage.getItem(`arc_col_height_${col.id}`);
-    const savedColSpan = localStorage.getItem(`arc_col_span_${col.id}`);
-    if (savedColHeight) {
-      colEl.style.height = `${savedColHeight}px`;
-      colEl.style.maxHeight = `${savedColHeight}px`;
-    }
-    if (savedColSpan === '2') {
-      colEl.classList.add('bento-span-2');
-    }
-  } catch {}
+  const faviconStack = document.createElement('div');
+  faviconStack.className = 'tile-favicon-stack';
 
-  // Pointer drag resizing for column
-  colResizeHandle.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const startY = e.clientY;
-    const startX = e.clientX;
-    const startHeight = colEl.offsetHeight;
-
-    colResizeHandle.setPointerCapture(e.pointerId);
-    colEl.classList.add('is-resizing');
-
-    function onPointerMove(moveEvent) {
-      const deltaY = moveEvent.clientY - startY;
-      const deltaX = moveEvent.clientX - startX;
-
-      const newHeight = Math.max(120, Math.min(900, startHeight + deltaY));
-      colEl.style.height = `${newHeight}px`;
-      colEl.style.maxHeight = `${newHeight}px`;
-
-      // Expand to 2x bento span if dragged significantly right
-      if (deltaX > 140) {
-        colEl.classList.add('bento-span-2');
-      } else if (deltaX < -80) {
-        colEl.classList.remove('bento-span-2');
+  // Find up to 3-4 distinct favicons
+  const distinctFaviconCards = [];
+  const seenHosts = new Set();
+  for (const cardId of cardIds) {
+    const card = cardsMap[cardId];
+    if (card && card.url) {
+      let host = card.host;
+      if (!host) {
+        try {
+          host = new URL(card.url).hostname.replace(/^www\./, '');
+        } catch {}
+      }
+      if (host && !seenHosts.has(host)) {
+        seenHosts.add(host);
+        distinctFaviconCards.push(card);
+        if (distinctFaviconCards.length >= 4) break;
       }
     }
+  }
 
-    function onPointerUp(upEvent) {
-      try {
-        colResizeHandle.releasePointerCapture(upEvent.pointerId);
-      } catch {}
-      colEl.classList.remove('is-resizing');
-      colResizeHandle.removeEventListener('pointermove', onPointerMove);
-      colResizeHandle.removeEventListener('pointerup', onPointerUp);
+  if (distinctFaviconCards.length < 4) {
+    for (const cardId of cardIds) {
+      const card = cardsMap[cardId];
+      if (card && !distinctFaviconCards.includes(card)) {
+        distinctFaviconCards.push(card);
+        if (distinctFaviconCards.length >= 4) break;
+      }
+    }
+  }
 
-      try {
-        localStorage.setItem(`arc_col_height_${col.id}`, String(colEl.offsetHeight));
-        if (colEl.classList.contains('bento-span-2')) {
-          localStorage.setItem(`arc_col_span_${col.id}`, '2');
-        } else {
-          localStorage.removeItem(`arc_col_span_${col.id}`);
-        }
-      } catch {}
+  for (const fCard of distinctFaviconCards) {
+    const img = document.createElement('img');
+    img.className = 'tile-stack-item';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = fCard.title || fCard.host || '';
+    img.title = fCard.title || fCard.host || '';
+
+    const extId = chrome.runtime?.id;
+    if (extId && fCard.url) {
+      img.src = `chrome-extension://${extId}/_favicon/?pageUrl=${encodeURIComponent(fCard.url)}&size=32`;
+    } else if (fCard.host) {
+      img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(fCard.host)}&sz=32`;
     }
 
-    colResizeHandle.addEventListener('pointermove', onPointerMove);
-    colResizeHandle.addEventListener('pointerup', onPointerUp);
-  });
+    img.onerror = () => {
+      const fallback = document.createElement('span');
+      fallback.className = 'tile-stack-item tile-stack-fallback';
+      fallback.textContent = (fCard.host || fCard.title || '?').charAt(0).toUpperCase();
+      fallback.title = fCard.title || fCard.host || '';
+      if (img.parentNode) {
+        img.parentNode.replaceChild(fallback, img);
+      }
+    };
 
-  // Double click to reset column size
-  colResizeHandle.addEventListener('dblclick', (e) => {
-    e.stopPropagation();
-    colEl.style.height = '';
-    colEl.style.maxHeight = '';
-    colEl.classList.remove('bento-span-2');
-    try {
-      localStorage.removeItem(`arc_col_height_${col.id}`);
-      localStorage.removeItem(`arc_col_span_${col.id}`);
-    } catch {}
-    showToast('Column size reset');
-  });
+    faviconStack.appendChild(img);
+  }
 
-  colEl.appendChild(colResizeHandle);
+  footer.appendChild(faviconStack);
+
+  const countBadge = document.createElement('span');
+  countBadge.className = 'tile-count-badge';
+  countBadge.textContent = String(cardIds.length);
+  countBadge.title = `${cardIds.length} bookmarks`;
+  footer.appendChild(countBadge);
+
+  colEl.appendChild(footer);
+
+  // Snap-to-Bento Resize Handle (Phase 2: Step 4)
+  attachBentoSnapResize(colEl, `arc_tile_span_${col.id}`, 't-1x2');
 
   return colEl;
 }
@@ -1589,10 +2197,24 @@ function renderBoard(layout, cardsMap, workspaceId) {
 
   const widgetCards = [];
   if (enabledWidgets.includes('pomodoro')) {
-    widgetCards.push(createPomodoroCardElement({ meta: currentMeta, layout, cards: cardsMap }));
+    const pCard = createPomodoroCardElement({ meta: currentMeta, layout, cards: cardsMap });
+    const savedPomoSpan = (() => {
+      try { return localStorage.getItem('arc_tile_span_widget_pomodoro'); } catch { return null; }
+    })() || 't-1x1';
+    for (const s of BENTO_SPANS) pCard.classList.remove(s);
+    pCard.classList.add(savedPomoSpan);
+    attachBentoSnapResize(pCard, 'arc_tile_span_widget_pomodoro', 't-1x1');
+    widgetCards.push(pCard);
   }
   if (enabledWidgets.includes('calendar')) {
-    widgetCards.push(createCalendarCardElement({ meta: currentMeta, layout, cards: cardsMap }));
+    const cCard = createCalendarCardElement({ meta: currentMeta, layout, cards: cardsMap });
+    const savedCalSpan = (() => {
+      try { return localStorage.getItem('arc_tile_span_widget_calendar'); } catch { return null; }
+    })() || 't-2x1';
+    for (const s of BENTO_SPANS) cCard.classList.remove(s);
+    cCard.classList.add(savedCalSpan);
+    attachBentoSnapResize(cCard, 'arc_tile_span_widget_calendar', 't-2x1');
+    widgetCards.push(cCard);
   }
 
   // Visual Widget Cards (Pomodoro & Calendar as in Markmez)
@@ -1620,6 +2242,32 @@ function renderBoard(layout, cardsMap, workspaceId) {
       fragment.appendChild(wCard);
     }
   }
+
+  // Ghost '+' Tile (Step 7 of redesign guide, inspired by Image 2 "Create a room")
+  const ghostTile = document.createElement('div');
+  ghostTile.className = 'ghost-tile create-room-tile t-1x1 glass';
+  ghostTile.setAttribute('role', 'button');
+  ghostTile.tabIndex = 0;
+  ghostTile.title = 'Create a collection';
+  ghostTile.setAttribute('aria-label', 'Create a collection');
+  ghostTile.innerHTML = `
+    <div class="ghost-tile-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </div>
+    <span class="ghost-tile-label">Create a collection</span>
+  `;
+  const handleGhostCreate = () => promptAddColumn(workspaceId);
+  ghostTile.addEventListener('click', handleGhostCreate);
+  ghostTile.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleGhostCreate();
+    }
+  });
+  fragment.appendChild(ghostTile);
 
   boardContainer.innerHTML = '';
   boardContainer.appendChild(fragment);
@@ -1851,9 +2499,15 @@ async function loadAndRender() {
     }
 
     applyTheme(currentMeta.settings?.theme || 'dark');
+    applyPalette(currentMeta.settings?.palette || localStorage.getItem('arc_palette') || 'lavender');
     applyViewMode(currentMeta.settings?.viewMode || 'bento');
     const activeWs = (currentMeta.workspaces || []).find((w) => w.id === activeWsId);
     applyWallpaper(currentMeta.settings, activeWs);
+
+    // Sync chrome states
+    updateWeatherChip();
+    renderWorkspaceTabs(currentMeta);
+    renderBottomDock(currentMeta);
 
     // Sync rail button states
     syncRailState(currentLayout);
@@ -1942,4 +2596,5 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Initial boot
+initDynamicLivePill();
 loadAndRender();
