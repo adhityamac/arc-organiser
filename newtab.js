@@ -560,6 +560,13 @@ if (floatingMenuBtn && quickMenuPopover) {
     }
   });
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && quickMenuPopover.style.display !== 'none') {
+      quickMenuPopover.style.display = 'none';
+      floatingMenuBtn.focus();
+    }
+  });
+
   // Quick Menu Action Bindings
   const menuAddCol = document.getElementById('menu-add-column');
   if (menuAddCol) {
@@ -1558,7 +1565,7 @@ function createCardElement(card, workspaceId) {
 
   cardEl.appendChild(actions);
 
-  // Direct Inline Edit on Double Click
+  // Direct Inline Edit on Double Click or Keyboard (F2 / Enter)
   const startInlineCardEdit = (e) => {
     if (e) e.stopPropagation();
     const input = document.createElement('input');
@@ -1600,14 +1607,17 @@ function createCardElement(card, workspaceId) {
 
   cardEl.addEventListener('dblclick', startInlineCardEdit);
 
-  // Keyboard accessibility & quick actions (Delete, Backspace, E)
+  // Keyboard accessibility & quick actions (Delete, Backspace, E, Enter to navigate)
   cardEl.addEventListener('keydown', async (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      cardEl.click();
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
       await deleteCard(card.id, workspaceId);
       showToast('Bookmark deleted', true, 4000);
-    } else if (e.key === 'e' || e.key === 'E') {
+    } else if (e.key === 'e' || e.key === 'E' || e.key === 'F2') {
       e.preventDefault();
       startInlineCardEdit(e);
     }
@@ -2010,6 +2020,12 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   };
 
   title.addEventListener('dblclick', startRename);
+  title.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === 'F2') {
+      e.preventDefault();
+      startRename();
+    }
+  });
   titleWrap.appendChild(title);
   left.appendChild(titleWrap);
 
@@ -2235,6 +2251,12 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   pocketTitle.tabIndex = 0;
   pocketTitle.setAttribute('role', 'button');
   pocketTitle.addEventListener('dblclick', startRename);
+  pocketTitle.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === 'F2') {
+      e.preventDefault();
+      startRename();
+    }
+  });
 
   pocketTitleWrap.appendChild(pocketTitle);
   pocketLip.appendChild(pocketTitleWrap);
@@ -2245,7 +2267,7 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   const faviconStack = document.createElement('div');
   faviconStack.className = 'tile-favicon-stack';
 
-  // Find up to 3-4 distinct favicons
+  // Find up to 3 distinct favicons for optimal pocket lip width balance
   const distinctFaviconCards = [];
   const seenHosts = new Set();
   for (const cardId of cardIds) {
@@ -2260,17 +2282,17 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
       if (host && !seenHosts.has(host)) {
         seenHosts.add(host);
         distinctFaviconCards.push(card);
-        if (distinctFaviconCards.length >= 4) break;
+        if (distinctFaviconCards.length >= 3) break;
       }
     }
   }
 
-  if (distinctFaviconCards.length < 4) {
+  if (distinctFaviconCards.length < 3) {
     for (const cardId of cardIds) {
       const card = cardsMap[cardId];
       if (card && !distinctFaviconCards.includes(card)) {
         distinctFaviconCards.push(card);
-        if (distinctFaviconCards.length >= 4) break;
+        if (distinctFaviconCards.length >= 3) break;
       }
     }
   }
@@ -2682,7 +2704,7 @@ async function loadAndRender() {
 
     applyFocusModeUI(currentMeta?.settings?.focusMode || 'WORK');
     if (railTriageBadge) {
-      const inboxCol = (currentLayout?.columns || []).find(c => c.system === 'inbox' || c.id === 'col_inbox' || c.title?.toLowerCase() === 'inbox');
+      const inboxCol = Object.values(currentLayout?.columns || {}).find(c => c.system === 'inbox' || c.id === 'col_inbox' || c.title?.toLowerCase() === 'inbox');
       railTriageBadge.style.display = (inboxCol?.cardIds?.length > 0) ? 'block' : 'none';
     }
 

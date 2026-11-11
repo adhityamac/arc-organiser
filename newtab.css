@@ -416,25 +416,25 @@ body {
   width: 100vw;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   user-select: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* --------------------------------------------------------------------------
-   Main Viewport Canvas (Full 100% width with no left rail gap)
+   Main Viewport Canvas (Full width with left rail offset)
    -------------------------------------------------------------------------- */
 .main-viewport {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  width: 100%;
+  width: calc(100vw - 80px);
   height: 100vh;
   overflow: hidden;
   position: relative;
-  z-index: 1;
+  z-index: 10;
 }
 
 /* --------------------------------------------------------------------------
@@ -4825,5 +4825,35 @@ body {
   outline: 2px solid var(--accent-primary) !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 4px var(--accent-primary-glow) !important;
+}
+
+/* 5. Responsive Design Breakpoints (WCAG & Frontend Engineering) */
+@media (max-width: 960px) {
+  #top-bar-left {
+    display: none;
+  }
+  #board-container {
+    padding: 16px 20px 100px 20px;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 680px) {
+  #sidebar-rail {
+    display: none;
+  }
+  .main-viewport {
+    width: 100vw !important;
+  }
+  #board-container {
+    padding: 12px 12px 90px 12px;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-auto-rows: 160px;
+  }
+  .floating-fab-container {
+    bottom: 16px;
+    right: 14px;
+  }
 }
 
