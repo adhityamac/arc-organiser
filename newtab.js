@@ -39,7 +39,7 @@ import { openTriageMode } from './lib/ui/triage.js';
 import { getBlob } from './lib/db.js';
 import { mountLiveWallpaper, unmountLiveWallpaper } from './lib/ui/live-wallpaper.js';
 import { openWallpaperModal } from './lib/ui/wallpaper-modal.js';
-import { normalizeUrl } from './lib/url.js';
+import { normalizeUrl, isValidUrl } from './lib/url.js';
 
 performance.mark('mbt_init_start');
 
@@ -80,6 +80,11 @@ const dockAddBookmarkBtn = document.getElementById('dock-add-bookmark-btn');
 const dockDrawerBtn = document.getElementById('dock-drawer-btn');
 const dockWallpaperBtn = document.getElementById('dock-wallpaper-btn');
 const dockAddColumnBtn = document.getElementById('dock-add-column-btn');
+
+// 2-Nav Architecture: Left Rail Workspaces & Integrated Top Search
+const railWorkspaces = document.getElementById('rail-workspaces');
+const topSearchInput = document.getElementById('top-search-input');
+const topSearchClearBtn = document.getElementById('top-search-clear-btn');
 
 // Backward compatibility references
 const railBrandBtn = document.getElementById('rail-brand-btn');
@@ -212,6 +217,29 @@ async function applyWallpaper(settings, activeWs) {
   wallpaperLayer.style.opacity = `${(100 - dim) / 100}`;
   wallpaperLayer.style.filter = blur > 0 ? `blur(${blur}px)` : 'none';
 
+  // Dynamic Wallpaper Mesh Variables (Sunset/Twilight/Custom)
+  if (wp === 'none') {
+    wallpaperLayer.style.removeProperty('--mesh-c1');
+    wallpaperLayer.style.removeProperty('--mesh-c2');
+    wallpaperLayer.style.removeProperty('--mesh-c3');
+    wallpaperLayer.style.removeProperty('--mesh-c4');
+  } else if (wp && (wp.includes('sunset') || wp.includes('warm') || wp === 'preset:sunset')) {
+    wallpaperLayer.style.setProperty('--mesh-c1', '#d6e4f0');
+    wallpaperLayer.style.setProperty('--mesh-c2', '#e5d4ed');
+    wallpaperLayer.style.setProperty('--mesh-c3', '#fbe3d5');
+    wallpaperLayer.style.setProperty('--mesh-c4', '#fed7aa');
+  } else if (wp && (wp.includes('twilight') || wp.includes('dark') || wp === 'preset:twilight')) {
+    wallpaperLayer.style.setProperty('--mesh-c1', '#1e1b4b');
+    wallpaperLayer.style.setProperty('--mesh-c2', '#312e81');
+    wallpaperLayer.style.setProperty('--mesh-c3', '#4c1d95');
+    wallpaperLayer.style.setProperty('--mesh-c4', '#0f172a');
+  } else {
+    wallpaperLayer.style.setProperty('--mesh-c1', 'rgba(214, 228, 240, 0.4)');
+    wallpaperLayer.style.setProperty('--mesh-c2', 'rgba(229, 212, 237, 0.4)');
+    wallpaperLayer.style.setProperty('--mesh-c3', 'rgba(251, 227, 213, 0.4)');
+    wallpaperLayer.style.setProperty('--mesh-c4', 'rgba(254, 215, 170, 0.4)');
+  }
+
   // Revoke previous custom object URL to prevent memory leaks
   if (wallpaperLayer._currentObjectUrl) {
     try {
@@ -338,7 +366,12 @@ function applyCardFilter(query) {
       continue;
     }
     const title = cardEl.querySelector('.card-title')?.textContent?.toLowerCase() || '';
-    const match = title.includes(q);
+    const host = cardEl.querySelector('.card-host')?.textContent?.toLowerCase() || '';
+    const cardId = cardEl.dataset.cardId;
+    const cardObj = currentCards?.[cardId];
+    const url = (cardObj?.url || '').toLowerCase();
+    const tags = Array.isArray(cardObj?.tags) ? cardObj.tags.join(' ').toLowerCase() : '';
+    const match = title.includes(q) || host.includes(q) || url.includes(q) || tags.includes(q);
     cardEl.style.display = match ? '' : 'none';
   }
 }
@@ -414,15 +447,13 @@ if (searchIconSvg) {
 }
 
 // Floating Circular Buttons (Bottom-Right)
-if (floatingSettingsBtn) {
-  floatingSettingsBtn.addEventListener('click', () => {
-    if (chrome.runtime.openOptionsPage) {
-      chrome.runtime.openOptionsPage();
-    } else {
-      window.open('options.html');
-    }
-  });
-}
+floatingSettingsBtn?.addEventListener('click', () => {
+  if (chrome.runtime?.openOptionsPage) {
+    chrome.runtime.openOptionsPage();
+  } else {
+    window.open('options.html');
+  }
+});
 
 // Unified Apple Dynamic Island Morphing Engine (Image 1)
 const dynamicIsland = document.getElementById('dynamic-island');
@@ -451,29 +482,28 @@ function collapseDynamicIsland() {
   const exp = dynamicIsland.querySelector('.island-expanded');
   if (idle) idle.style.display = 'flex';
   if (exp) exp.style.display = 'none';
+  if (islandSearchInput) {
+    islandSearchInput.value = '';
+    islandSearchInput.blur();
+  }
+  clearCardFilter();
 }
 
-if (islandSearchTrigger) {
-  islandSearchTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
+islandSearchTrigger?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  expandDynamicIsland();
+});
+
+dynamicIsland?.addEventListener('click', (e) => {
+  if (!dynamicIsland.classList.contains('expanded') && !e.target.closest('.island-focus-badge')) {
     expandDynamicIsland();
-  });
-}
+  }
+});
 
-if (dynamicIsland) {
-  dynamicIsland.addEventListener('click', (e) => {
-    if (!dynamicIsland.classList.contains('expanded') && !e.target.closest('.island-focus-badge')) {
-      expandDynamicIsland();
-    }
-  });
-}
-
-if (islandCloseBtn) {
-  islandCloseBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    collapseDynamicIsland();
-  });
-}
+islandCloseBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  collapseDynamicIsland();
+});
 
 if (islandSearchInput) {
   islandSearchInput.addEventListener('keydown', (e) => {
@@ -481,17 +511,75 @@ if (islandSearchInput) {
       const q = islandSearchInput.value.trim();
       if (q) handleSearchAction(q);
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       collapseDynamicIsland();
+    }
+  });
+
+  islandSearchInput.addEventListener('input', () => {
+    applyCardFilter(islandSearchInput.value);
+  });
+}
+
+// Integrated Top Search Controller (2-Nav Architecture)
+function clearTopSearch() {
+  if (topSearchInput) {
+    topSearchInput.value = '';
+    topSearchInput.blur();
+  }
+  if (topSearchClearBtn) {
+    topSearchClearBtn.style.display = 'none';
+  }
+  clearCardFilter();
+}
+
+function focusTopSearch() {
+  if (topSearchInput) {
+    topSearchInput.focus();
+    topSearchInput.select();
+  } else if (dynamicIsland) {
+    expandDynamicIsland();
+  }
+}
+
+if (topSearchInput) {
+  topSearchInput.addEventListener('input', () => {
+    const val = topSearchInput.value;
+    applyCardFilter(val);
+    if (topSearchClearBtn) {
+      topSearchClearBtn.style.display = val.length > 0 ? 'inline-flex' : 'none';
+    }
+  });
+
+  topSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = topSearchInput.value.trim();
+      if (q) handleSearchAction(q);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      clearTopSearch();
     }
   });
 }
 
+if (topSearchClearBtn) {
+  topSearchClearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearTopSearch();
+  });
+}
+
 document.addEventListener('keydown', (e) => {
-  if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA')) {
+  const keyLower = e.key.toLowerCase();
+  if ((keyLower === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA')) {
     e.preventDefault();
-    expandDynamicIsland();
-  } else if (e.key === 'Escape' && dynamicIsland?.classList.contains('expanded')) {
-    collapseDynamicIsland();
+    focusTopSearch();
+  } else if (e.key === 'Escape') {
+    if (topSearchInput && (document.activeElement === topSearchInput || topSearchInput.value)) {
+      clearTopSearch();
+    } else if (dynamicIsland?.classList.contains('expanded')) {
+      collapseDynamicIsland();
+    }
   }
 });
 
@@ -543,8 +631,8 @@ islandFocusBadges.forEach((badge) => {
   });
 });
 
-if (floatingMenuBtn && quickMenuPopover) {
-  floatingMenuBtn.addEventListener('click', (e) => {
+if (quickMenuPopover) {
+  floatingMenuBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     const isVisible = quickMenuPopover.style.display !== 'none';
     quickMenuPopover.style.display = isVisible ? 'none' : 'flex';
@@ -553,7 +641,8 @@ if (floatingMenuBtn && quickMenuPopover) {
   document.addEventListener('click', (e) => {
     if (
       !quickMenuPopover.contains(e.target) &&
-      e.target !== floatingMenuBtn &&
+      (!floatingMenuBtn || e.target !== floatingMenuBtn) &&
+      (!topSettingsBtn || !topSettingsBtn.contains(e.target)) &&
       (!railProfileBtn || !railProfileBtn.contains(e.target))
     ) {
       quickMenuPopover.style.display = 'none';
@@ -563,7 +652,7 @@ if (floatingMenuBtn && quickMenuPopover) {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && quickMenuPopover.style.display !== 'none') {
       quickMenuPopover.style.display = 'none';
-      floatingMenuBtn.focus();
+      floatingMenuBtn?.focus();
     }
   });
 
@@ -628,9 +717,7 @@ if (floatingMenuBtn && quickMenuPopover) {
     });
   }
 
-  if (floatingWallpaperBtn) {
-    floatingWallpaperBtn.addEventListener('click', triggerWallpaperModal);
-  }
+  floatingWallpaperBtn?.addEventListener('click', triggerWallpaperModal);
 
   async function setWallpaperPreset(wp) {
     quickMenuPopover.style.display = 'none';
@@ -719,30 +806,28 @@ if (railBrandBtn) {
   });
 }
 
-if (railWorkspacesBtn) {
-  railWorkspacesBtn.addEventListener('click', async () => {
-    let workspaces = currentMeta?.workspaces;
-    if (!workspaces || workspaces.length === 0) {
-      workspaces = [
-        { id: 'ws_default', name: 'Home', icon: '🏠', order: 0 },
-        { id: 'ws_projects', name: 'Projects', icon: '💼', order: 1 },
-      ];
-      if (currentMeta) currentMeta.workspaces = workspaces;
-    }
-    const currentId = currentMeta?.activeWorkspaceId || 'ws_default';
-    const currentIndex = workspaces.findIndex((w) => w.id === currentId);
-    const nextIndex = (currentIndex + 1) % workspaces.length;
-    const nextWs = workspaces[nextIndex];
-    currentMeta.activeWorkspaceId = nextWs.id;
-    await chrome.storage.local.set({ meta: currentMeta });
-    loadAndRender();
-    showToast(`Workspace: ${nextWs.name || 'Workspace'}`);
-  });
-}
+railWorkspacesBtn?.addEventListener('click', async () => {
+  let workspaces = currentMeta?.workspaces;
+  if (!workspaces || workspaces.length === 0) {
+    workspaces = [
+      { id: 'ws_default', name: 'Home', icon: '🏠', order: 0 },
+      { id: 'ws_projects', name: 'Projects', icon: '💼', order: 1 },
+    ];
+    if (currentMeta) currentMeta.workspaces = workspaces;
+  }
+  const currentId = currentMeta?.activeWorkspaceId || 'ws_default';
+  const currentIndex = workspaces.findIndex((w) => w.id === currentId);
+  const nextIndex = (currentIndex + 1) % workspaces.length;
+  const nextWs = workspaces[nextIndex];
+  currentMeta.activeWorkspaceId = nextWs.id;
+  await chrome.storage.local.set({ meta: currentMeta });
+  loadAndRender();
+  showToast(`Workspace: ${nextWs.name || 'Workspace'}`);
+});
 
 if (railSearchBtn) {
   railSearchBtn.addEventListener('click', () => {
-    expandDynamicIsland();
+    focusTopSearch();
   });
 }
 
@@ -765,6 +850,7 @@ if (railDrawerBtn) {
 async function promptAddColumn(targetWsId) {
   const title = prompt('Enter new collection title:');
   if (!title || !title.trim()) return;
+  const safeTitle = title.trim().slice(0, 60);
   const activeWsId = targetWsId || currentMeta?.activeWorkspaceId || 'ws_default';
   const wsKey = `ws:${activeWsId}`;
   const colId = `col_${Date.now()}`;
@@ -775,7 +861,7 @@ async function promptAddColumn(targetWsId) {
     layout.columnOrder.push(colId);
     layout.columns[colId] = {
       id: colId,
-      title: title.trim(),
+      title: safeTitle,
       color: '#556b2f',
       emoji: '📌',
       collapsed: false,
@@ -839,11 +925,23 @@ if (dockAddColumnBtn) {
   dockAddColumnBtn.addEventListener('click', () => promptAddColumn());
 }
 
-// Top Bar Right Interactions
+// Weather Interactions & Synchronization (Hero Subtitle & Pebble Widget)
+function promptChangeWeatherCity() {
+  const currentCity = currentMeta?.settings?.weatherCity || 'New York';
+  const newCity = prompt('Enter city for weather forecast:', currentCity);
+  if (newCity !== null && newCity.trim()) {
+    currentMeta.settings = currentMeta.settings || {};
+    currentMeta.settings.weatherCity = newCity.trim();
+    chrome.storage.local.set({ meta: currentMeta });
+    updateWeatherChip();
+    showToast(`Weather location set to ${newCity.trim()}`);
+  }
+}
+
 async function updateWeatherChip() {
-  if (!topWeatherChip) return;
-  const tempSpan = topWeatherChip.querySelector('.weather-temp');
-  const iconSpan = topWeatherChip.querySelector('.weather-icon');
+  const heroWeatherSub = document.getElementById('hero-weather-sub');
+  const pebbleWeatherWidget = document.getElementById('pebble-weather-widget');
+  const topWeatherChip = document.getElementById('top-weather-chip');
 
   const city = currentMeta?.settings?.weatherCity || 'New York';
   const unit = currentMeta?.settings?.weatherUnit || 'F';
@@ -863,17 +961,40 @@ async function updateWeatherChip() {
 
         const code = wxData.current_weather.weathercode;
         let icon = '☀️';
-        if ([1, 2].includes(code)) icon = '⛅';
-        else if ([3].includes(code)) icon = '☁️';
-        else if ([45, 48].includes(code)) icon = '🌫️';
-        else if (code >= 51 && code <= 67) icon = '🌧️';
-        else if (code >= 71 && code <= 77) icon = '🌨️';
-        else if (code >= 80 && code <= 82) icon = '🌦️';
-        else if (code >= 95) icon = '⛈️';
+        let desc = 'Clear Sky';
+        if ([1, 2].includes(code)) { icon = '⛅'; desc = 'Scattered Clouds'; }
+        else if ([3].includes(code)) { icon = '☁️'; desc = 'Overcast'; }
+        else if ([45, 48].includes(code)) { icon = '🌫️'; desc = 'Foggy'; }
+        else if (code >= 51 && code <= 67) { icon = '🌧️'; desc = 'Rain'; }
+        else if (code >= 71 && code <= 77) { icon = '🌨️'; desc = 'Snow'; }
+        else if (code >= 80 && code <= 82) { icon = '🌦️'; desc = 'Showers'; }
+        else if (code >= 95) { icon = '⛈️'; desc = 'Thunderstorm'; }
 
-        if (tempSpan) tempSpan.textContent = `${temp}°`;
-        if (iconSpan) iconSpan.textContent = icon;
-        topWeatherChip.title = `${name}: ${temp}°${unit} (Click to change location)`;
+        // 1. Hero Atmosphere Subtitle (Image 4)
+        if (heroWeatherSub) {
+          const heroIcon = heroWeatherSub.querySelector('.hero-weather-icon');
+          const heroText = heroWeatherSub.querySelector('.hero-weather-text');
+          if (heroIcon) heroIcon.textContent = icon;
+          if (heroText) heroText.textContent = `${temp}°${unit} · ${desc}`;
+        }
+
+        // 2. Pebble Weather Organic Blob Widget (Image 1 & 3)
+        if (pebbleWeatherWidget) {
+          const pTemp = pebbleWeatherWidget.querySelector('.pebble-temp');
+          const pIcon = pebbleWeatherWidget.querySelector('.pebble-icon');
+          if (pTemp) pTemp.textContent = `${temp}°`;
+          if (pIcon) pIcon.textContent = icon;
+          pebbleWeatherWidget.title = `${name}: ${temp}°${unit} · ${desc} (Click to change location)`;
+        }
+
+        // 3. Fallback Top Weather Chip
+        if (topWeatherChip) {
+          const tempSpan = topWeatherChip.querySelector('.weather-temp');
+          const iconSpan = topWeatherChip.querySelector('.weather-icon');
+          if (tempSpan) tempSpan.textContent = `${temp}°`;
+          if (iconSpan) iconSpan.textContent = icon;
+          topWeatherChip.title = `${name}: ${temp}°${unit} (Click to change location)`;
+        }
       }
     }
   } catch {
@@ -882,22 +1003,15 @@ async function updateWeatherChip() {
 }
 
 if (topWeatherChip) {
-  topWeatherChip.addEventListener('click', () => {
-    const currentCity = currentMeta?.settings?.weatherCity || 'New York';
-    const newCity = prompt('Enter city for weather forecast:', currentCity);
-    if (newCity !== null && newCity.trim()) {
-      currentMeta.settings = currentMeta.settings || {};
-      currentMeta.settings.weatherCity = newCity.trim();
-      chrome.storage.local.set({ meta: currentMeta });
-      updateWeatherChip();
-      showToast(`Weather location set to ${newCity.trim()}`);
-    }
-  });
+  topWeatherChip.addEventListener('click', promptChangeWeatherCity);
 }
 
-if (topSearchBtn) {
-  topSearchBtn.addEventListener('click', () => expandDynamicIsland());
+const pebbleWeatherWidget = document.getElementById('pebble-weather-widget');
+if (pebbleWeatherWidget) {
+  pebbleWeatherWidget.addEventListener('click', promptChangeWeatherCity);
 }
+
+topSearchBtn?.addEventListener('click', () => expandDynamicIsland());
 
 if (topThemeBtn) {
   topThemeBtn.addEventListener('click', async () => {
@@ -1359,9 +1473,128 @@ window.addEventListener('scroll', hideMacOsContextMenu, true);
 window.addEventListener('blur', hideMacOsContextMenu);
 
 /**
+ * Renders workspace icon buttons and "+" add button inside Left Rail (#rail-workspaces)
+ */
+function renderRailWorkspaces(meta) {
+  if (!railWorkspaces) return;
+  railWorkspaces.innerHTML = '';
+
+  let workspaces = meta?.workspaces;
+  let didUpdate = false;
+  if (!workspaces || workspaces.length === 0) {
+    workspaces = [
+      { id: 'ws_default', name: 'Home', icon: '🏠', order: 0 },
+      { id: 'ws_work', name: 'Work', icon: '💼', order: 1 },
+      { id: 'ws_projects', name: 'Projects', icon: '🚀', order: 2 },
+    ];
+    if (meta) meta.workspaces = workspaces;
+    didUpdate = true;
+  } else {
+    if (workspaces[0] && workspaces[0].name === 'Default') {
+      workspaces[0].name = 'Home';
+      workspaces[0].icon = '🏠';
+      didUpdate = true;
+    }
+    if (!workspaces.some((w) => w.id === 'ws_work' || w.name === 'Work')) {
+      workspaces.splice(1, 0, {
+        id: 'ws_work',
+        parentId: null,
+        name: 'Work',
+        icon: '💼',
+        order: 1,
+      });
+      workspaces.forEach((w, idx) => { w.order = idx; });
+      didUpdate = true;
+    }
+    if (!workspaces.some((w) => w.id === 'ws_projects' || w.name === 'Projects')) {
+      workspaces.push({
+        id: 'ws_projects',
+        parentId: null,
+        name: 'Projects',
+        icon: '🚀',
+        order: workspaces.length,
+      });
+      didUpdate = true;
+    }
+  }
+
+  if (didUpdate && meta) {
+    chrome.storage.local.set({ meta }).catch(() => {});
+  }
+
+  const activeWsId = meta?.activeWorkspaceId || 'ws_default';
+
+  for (const ws of workspaces) {
+    const isActive = ws.id === activeWsId;
+    const btn = document.createElement('button');
+    btn.className = `rail-btn rail-ws-btn ${isActive ? 'active' : ''}`;
+    btn.dataset.wsId = ws.id;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    btn.setAttribute('aria-label', `Workspace: ${ws.name}`);
+    btn.title = ws.name || 'Workspace';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'rail-icon rail-ws-icon';
+    iconSpan.textContent = ws.icon || '🏠';
+    btn.appendChild(iconSpan);
+
+    const dot = document.createElement('span');
+    dot.className = 'rail-ws-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    btn.appendChild(dot);
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'rail-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.textContent = ws.name || 'Workspace';
+    btn.appendChild(tooltip);
+
+    btn.addEventListener('click', async () => {
+      if (ws.id === meta.activeWorkspaceId) return;
+      meta.activeWorkspaceId = ws.id;
+      await chrome.storage.local.set({ meta });
+      loadAndRender();
+      showToast(`Workspace: ${ws.name}`);
+    });
+
+    railWorkspaces.appendChild(btn);
+  }
+
+  // "+" Add Workspace Button
+  const addWsBtn = document.createElement('button');
+  addWsBtn.className = 'rail-btn rail-ws-add-btn';
+  addWsBtn.title = 'Create new workspace';
+  addWsBtn.setAttribute('aria-label', 'Create new workspace');
+  addWsBtn.innerHTML = `
+    <span class="rail-icon" aria-hidden="true">+</span>
+    <span class="rail-tooltip" role="tooltip">New Workspace</span>
+  `;
+  addWsBtn.addEventListener('click', async () => {
+    const name = prompt('Enter new workspace name:');
+    if (!name || !name.trim()) return;
+    const newWsId = `ws_${Date.now()}`;
+    meta.workspaces = meta.workspaces || [];
+    meta.workspaces.push({
+      id: newWsId,
+      parentId: null,
+      name: name.trim(),
+      icon: '📂',
+      order: meta.workspaces.length,
+    });
+    meta.activeWorkspaceId = newWsId;
+    await chrome.storage.local.set({ meta });
+    loadAndRender();
+    showToast(`Workspace "${name.trim()}" created`);
+  });
+  railWorkspaces.appendChild(addWsBtn);
+}
+
+/**
  * Renders the top workspace switcher pills (Home, Projects, +) with Apple sliding spring pill
  */
 function renderWorkspaceTabs(meta) {
+  renderRailWorkspaces(meta);
   if (!workspaceSwitcher) return;
   workspaceSwitcher.innerHTML = '';
 
@@ -1987,6 +2220,7 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'col-title-inline-edit';
+    input.maxLength = 60;
     input.value = col.title;
     title.replaceWith(input);
     input.focus();
@@ -1996,7 +2230,7 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
     const commit = async () => {
       if (committed) return;
       committed = true;
-      const newTitle = input.value.trim() || col.title;
+      const newTitle = input.value.trim().slice(0, 60) || col.title;
       const wsKey = `ws:${workspaceId}`;
       await transaction([wsKey], (shards) => {
         const l = shards[wsKey];
@@ -2131,7 +2365,7 @@ function createColumnElement(col, cardsMap, workspaceId, layout) {
   if (cardIds.length === 0) {
     const emptyHint = document.createElement('div');
     emptyHint.className = 'empty-column-hint';
-    emptyHint.textContent = 'No bookmarks yet';
+    emptyHint.textContent = 'Drop tabs here or click + to add';
     list.appendChild(emptyHint);
   } else {
     for (const cardId of cardIds) {
@@ -2681,6 +2915,7 @@ async function loadAndRender() {
 
     // Sync chrome states
     updateWeatherChip();
+    renderRailWorkspaces(currentMeta);
     renderWorkspaceTabs(currentMeta);
     renderBottomDock(currentMeta);
 
@@ -2731,6 +2966,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
   if (changes.meta) {
     currentMeta = changes.meta.newValue;
+    renderRailWorkspaces(currentMeta);
     renderWorkspaceTabs(currentMeta);
   }
 
@@ -2754,28 +2990,259 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  if (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key === 'k')) {
+  const keyLower = e.key.toLowerCase();
+  const hasModifier = e.metaKey || e.ctrlKey || e.altKey;
+
+  if (((e.metaKey || e.ctrlKey) && keyLower === 'k') || (!hasModifier && e.key === '/')) {
     e.preventDefault();
-    expandDynamicIsland();
-  } else if (e.key === 'r') {
+    focusTopSearch();
+  } else if (!hasModifier && keyLower === 'c') {
+    // C for column
     e.preventDefault();
-    triggerTriage();
-  } else if (e.key === 't') {
+    promptAddColumn();
+  } else if (!hasModifier && keyLower === 'd') {
+    // D for drawer
     e.preventDefault();
     toggleTabDrawer(
       () => currentMeta?.activeWorkspaceId || 'ws_default',
       showToast,
       loadAndRender
     );
-  } else if (e.key === 'N' && e.shiftKey) {
+  } else if (!hasModifier && (keyLower === 't' || keyLower === 'r')) {
+    // T for triage (r retained for backwards compatibility)
     e.preventDefault();
-    document.getElementById('menu-add-column')?.click();
-  } else if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+    triggerTriage();
+  } else if (!hasModifier && keyLower === 'v') {
+    // V for view mode
+    e.preventDefault();
+    applyViewMode();
+    showToast('Bento Grid Layout (Active)');
+  } else if (e.key === 'N' && e.shiftKey && !e.metaKey && !e.ctrlKey) {
+    e.preventDefault();
+    promptAddColumn();
+  } else if (keyLower === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
     e.preventDefault();
     undoLastAction().then(() => showToast('Action undone'));
   }
 });
 
+// ==========================================================================
+// Hero Atmosphere Clock & Date Controller (Image 4)
+// ==========================================================================
+let heroClockInterval = null;
+
+function initHeroClock() {
+  const heroClock = document.getElementById('hero-clock');
+  const heroDate = document.getElementById('hero-date');
+
+  function updateHeroClock() {
+    const d = new Date();
+    if (heroClock) {
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      heroClock.textContent = `${hours}:${minutes}`;
+    }
+    if (heroDate) {
+      const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+      const day = d.getDate();
+      const month = d.toLocaleDateString('en-US', { month: 'long' });
+      heroDate.textContent = `${weekday}, ${day} ${month}`;
+    }
+  }
+
+  updateHeroClock();
+  if (heroClockInterval) clearInterval(heroClockInterval);
+  heroClockInterval = setInterval(updateHeroClock, 1000);
+}
+
+// ==========================================================================
+// Clover Quick-Capture Widget Controller (Image 2)
+// ==========================================================================
+function getActiveTargetColumnId() {
+  const cols = currentLayout?.columnOrder || [];
+  const inboxCol = cols.find(cId => {
+    const c = currentLayout?.columns?.[cId];
+    return c?.system === 'inbox' || c?.id === 'col_inbox' || c?.title?.toLowerCase() === 'inbox';
+  });
+  return inboxCol || cols[0] || 'col_inbox';
+}
+
+async function saveCurrentWindowSession() {
+  if (!chrome.tabs?.query) {
+    showToast('Tabs API unavailable in this context');
+    return;
+  }
+  showToast('Saving current window session...');
+  try {
+    const allTabs = await chrome.tabs.query({ currentWindow: true });
+    const activeWorkspaceId = currentMeta?.activeWorkspaceId || 'ws_default';
+    const settings = currentMeta?.settings || {};
+    const includePinned = !!settings.includePinnedInSession;
+
+    const validTabs = allTabs.filter(
+      (tab) =>
+        tab.url &&
+        isValidUrl(tab.url) &&
+        !tab.incognito &&
+        (includePinned || !tab.pinned)
+    );
+
+    if (validTabs.length === 0) {
+      showToast('No valid tabs to save');
+      return;
+    }
+
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const sessionColumnTitle = `Session · ${dateStr}`;
+    const colId = `col_session_${Date.now()}`;
+
+    const wsKey = `ws:${activeWorkspaceId}`;
+    const cardsKey = `cards:${activeWorkspaceId}`;
+
+    await transaction([wsKey, cardsKey], (data) => {
+      const layout = data[wsKey] || createDefaultWorkspaceLayout(activeWorkspaceId);
+      const cards = data[cardsKey] || {};
+
+      const cardIds = [];
+      const now = Date.now();
+
+      for (const tab of validTabs) {
+        const cardId = `card_${now}_${Math.random().toString(36).slice(2, 7)}`;
+        let host = '';
+        try {
+          host = new URL(tab.url).hostname.replace(/^www\./, '');
+        } catch {}
+        const nurl = normalizeUrl(tab.url, {
+          stripTracking: settings.stripTrackingParams !== false,
+        });
+
+        cards[cardId] = {
+          id: cardId,
+          type: 'link',
+          title: tab.title || host || tab.url,
+          url: tab.url,
+          nurl,
+          host,
+          createdAt: now,
+        };
+        cardIds.push(cardId);
+      }
+
+      layout.columns = layout.columns || {};
+      layout.columnOrder = layout.columnOrder || [];
+      layout.columns[colId] = {
+        id: colId,
+        title: sessionColumnTitle,
+        color: '#6366f1',
+        emoji: '🪟',
+        collapsed: false,
+        sort: 'manual',
+        cardIds,
+      };
+      layout.columnOrder.unshift(colId);
+
+      return {
+        [wsKey]: layout,
+        [cardsKey]: cards,
+      };
+    });
+
+    loadAndRender();
+    showToast(`Saved ${validTabs.length} tabs into "${sessionColumnTitle}"`);
+  } catch (err) {
+    console.warn('Failed to save window session:', err);
+    showToast('Could not save window session');
+  }
+}
+
+function initCloverQuickCapture() {
+  const cloverBtnCenter = document.getElementById('clover-btn-center');
+  const cloverBtnTask = document.getElementById('clover-btn-task');
+  const cloverBtnNote = document.getElementById('clover-btn-note');
+  const cloverBtnWindow = document.getElementById('clover-btn-window');
+  const cloverBtnDrawer = document.getElementById('clover-btn-drawer');
+
+  // Center button (+): Quick Add Link
+  cloverBtnCenter?.addEventListener('click', () => {
+    const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
+    const targetColId = getActiveTargetColumnId();
+    openAddLinkModal({
+      workspaceId: activeWsId,
+      columnId: targetColId,
+      onAdded: loadAndRender,
+    });
+  });
+
+  // Top leaf: New Task
+  cloverBtnTask?.addEventListener('click', async () => {
+    const title = prompt('Enter task description:');
+    if (!title || !title.trim()) return;
+
+    const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
+    const targetColId = getActiveTargetColumnId();
+    const cardId = `card_task_${Date.now()}`;
+
+    const cardsKey = `cards:${activeWsId}`;
+    const wsKey = `ws:${activeWsId}`;
+
+    await transaction([cardsKey, wsKey], (data) => {
+      const cards = data[cardsKey] || {};
+      const layout = data[wsKey] || createDefaultWorkspaceLayout(activeWsId);
+
+      cards[cardId] = {
+        id: cardId,
+        type: 'note',
+        title: title.trim(),
+        body: '',
+        tags: ['task'],
+        createdAt: Date.now(),
+      };
+
+      if (layout.columns && layout.columns[targetColId]) {
+        layout.columns[targetColId].cardIds = layout.columns[targetColId].cardIds || [];
+        layout.columns[targetColId].cardIds.unshift(cardId);
+      }
+
+      return {
+        [cardsKey]: cards,
+        [wsKey]: layout,
+      };
+    });
+
+    loadAndRender();
+    showToast(`Task added: "${title.trim()}"`);
+  });
+
+  // Right leaf: Quick Note
+  cloverBtnNote?.addEventListener('click', () => {
+    const activeWsId = currentMeta?.activeWorkspaceId || 'ws_default';
+    const targetColId = getActiveTargetColumnId();
+    openAddNoteModal({
+      workspaceId: activeWsId,
+      columnId: targetColId,
+      onAdded: loadAndRender,
+    });
+  });
+
+  // Bottom leaf: Save Window Session
+  cloverBtnWindow?.addEventListener('click', () => {
+    saveCurrentWindowSession();
+  });
+
+  // Left leaf: Open Tabs Drawer
+  cloverBtnDrawer?.addEventListener('click', () => {
+    toggleTabDrawer(
+      () => currentMeta?.activeWorkspaceId || 'ws_default',
+      showToast,
+      loadAndRender
+    );
+  });
+}
+
 // Initial boot
+initHeroClock();
+initCloverQuickCapture();
 initDynamicLivePill();
 loadAndRender();

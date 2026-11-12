@@ -7,43 +7,47 @@
   <style>
     /* Critical Inline CSS for sub-15ms First Paint */
     :root {
-      --bg-app: #07090e;
+      --primary: #f2b0f4;
+      --bg-app: #120e14;
       --bg-app-radial: 
-        radial-gradient(circle at 12% 18%, rgba(99, 102, 241, 0.35) 0%, transparent 45%),
-        radial-gradient(circle at 88% 22%, rgba(236, 72, 153, 0.32) 0%, transparent 48%),
-        radial-gradient(circle at 50% 82%, rgba(14, 165, 233, 0.28) 0%, transparent 52%),
-        radial-gradient(circle at 75% 75%, rgba(168, 85, 247, 0.28) 0%, transparent 45%),
-        linear-gradient(180deg, #0a0d17 0%, #05060a 100%);
-      --bg-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 100%);
-      --bg-surface-solid: #12151f;
-      --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
-      --border-subtle: rgba(255, 255, 255, 0.22);
-      --border-card-hover: rgba(255, 255, 255, 0.65);
-      --accent-primary: #6366f1;
-      --accent-danger: #f43f5e;
-      --accent-success: #10b981;
-      --accent-warning: #f59e0b;
-      --text-primary: #f8fafc;
-      --text-muted: #94a3b8;
-      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --glass-blur: blur(28px) saturate(190%);
-      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+        radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--primary) 14%, transparent) 0%, transparent 50%),
+        radial-gradient(circle at 82% 22%, color-mix(in srgb, var(--primary) 10%, transparent) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, color-mix(in srgb, var(--primary) 12%, transparent) 0%, transparent 55%),
+        linear-gradient(180deg, #120e14 0%, #0a080c 100%);
+      --bg-surface: color-mix(in srgb, #1e1a20 55%, transparent);
+      --bg-surface-solid: #1e1a20;
+      --bg-card: #1e1a20;
+      --border-subtle: rgba(255, 255, 255, 0.14);
+      --border-card-hover: rgba(255, 255, 255, 0.35);
+      --accent-primary: #f2b0f4;
+      --accent-danger: #ffb4ab;
+      --accent-success: #93d79b;
+      --accent-warning: #ffb951;
+      --text-primary: #ede0eb;
+      --text-muted: #a69da9;
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --glass-blur: blur(24px) saturate(180%);
+      --ease-spring: cubic-bezier(.2, .9, .3, 1.15);
     }
     :root[data-theme="light"] {
-      --bg-app: #f4efe6;
+      --primary: #874a8a;
+      --bg-app: #f6ecf6;
       --bg-app-radial: 
-        radial-gradient(circle at 18% 18%, rgba(245, 230, 215, 0.75) 0%, transparent 50%),
-        radial-gradient(circle at 82% 22%, rgba(230, 240, 235, 0.7) 0%, transparent 50%),
-        radial-gradient(circle at 50% 80%, rgba(220, 232, 222, 0.65) 0%, transparent 55%),
-        linear-gradient(180deg, #faf7f2 0%, #ede6db 100%);
-      --bg-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.55) 100%);
+        radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--primary) 12%, transparent) 0%, transparent 50%),
+        radial-gradient(circle at 82% 22%, color-mix(in srgb, var(--primary) 8%, transparent) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, color-mix(in srgb, var(--primary) 10%, transparent) 0%, transparent 55%),
+        linear-gradient(180deg, #f6ecf6 0%, #f1e4f1 100%);
+      --bg-surface: color-mix(in srgb, #ffffff 55%, transparent);
       --bg-surface-solid: #ffffff;
-      --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.65) 100%);
-      --border-subtle: rgba(255, 255, 255, 0.85);
-      --border-card-hover: rgba(255, 255, 255, 0.98);
-      --accent-primary: #4f46e5;
-      --text-primary: #1e293b;
-      --text-muted: #64748b;
+      --bg-card: #ffffff;
+      --border-subtle: color-mix(in srgb, #1d1a1e 12%, transparent);
+      --border-card-hover: color-mix(in srgb, #1d1a1e 24%, transparent);
+      --accent-primary: #874a8a;
+      --accent-danger: #ba1a1a;
+      --accent-success: #2e6c38;
+      --accent-warning: #8c5000;
+      --text-primary: #1d1a1e;
+      --text-muted: #6b6470;
     }
     *, *::before, *::after {
       box-sizing: border-box;
@@ -98,7 +102,8 @@
     }
     #top-chrome-container {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      justify-content: center;
       align-items: center;
       padding: 16px 28px;
       position: sticky;
@@ -107,8 +112,9 @@
       width: 100%;
       pointer-events: none;
     }
-    .top-bar-piece,
-    .dynamic-live-pill {
+    .hero-atmosphere,
+    .top-search-wrap,
+    .widget-shelf {
       pointer-events: auto;
     }
     #board-container {
@@ -118,7 +124,7 @@
       grid-auto-rows: 176px;
       grid-auto-flow: dense;
       gap: 16px;
-      padding: 16px 32px 100px 32px;
+      padding: 16px 24px 32px 24px;
       overflow-y: auto;
       overflow-x: hidden;
       height: 100%;
@@ -151,7 +157,7 @@
   <!-- Glass Sidebar Navigation Rail (Left Obsidian Rail - Image 2) -->
   <aside id="sidebar-rail" class="sidebar-rail" aria-label="Primary Navigation">
     <div class="rail-section-top">
-      <button id="rail-brand-btn" class="rail-btn rail-brand-btn" aria-label="Minimal Board" title="Minimal Board">
+      <button type="button" id="rail-brand-btn" class="rail-btn rail-brand-btn" aria-label="Minimal Board" title="Minimal Board">
         <svg class="rail-brand-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
           <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
@@ -164,23 +170,27 @@
 
     <div class="rail-divider"></div>
 
+    <!-- Workspaces in Left Rail -->
+    <div id="rail-workspaces" class="rail-workspaces-group" role="tablist" aria-label="Workspaces"></div>
+
     <div class="rail-section-mid">
-      <button id="rail-workspaces-btn" class="rail-btn" aria-label="Workspaces" title="Workspaces">
+      <button type="button" id="rail-drawer-btn" class="rail-btn" aria-label="Tabs Drawer (D)" title="Tabs Drawer (D)">
         <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
         </svg>
-        <span class="rail-tooltip" role="tooltip">Workspaces (W)</span>
+        <span class="rail-tooltip" role="tooltip">Open Tabs (D)</span>
       </button>
 
-      <button id="rail-search-btn" class="rail-btn" aria-label="Command Search (⌘K)" title="Command Search (⌘K)">
-        <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      <button type="button" id="rail-add-column-btn" class="rail-btn" aria-label="Add Column (C)" title="Add Column (C)">
+        <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
-        <span class="rail-tooltip" role="tooltip">Search (⌘K)</span>
+        <span class="rail-tooltip" role="tooltip">New Column (C)</span>
       </button>
 
-      <button id="rail-triage-btn" class="rail-btn" aria-label="Inbox Triage (T)" title="Inbox Triage (T)">
+      <button type="button" id="rail-triage-btn" class="rail-btn" aria-label="Inbox Triage (T)" title="Inbox Triage (T)">
         <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
           <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
@@ -189,23 +199,7 @@
         <span class="rail-tooltip" role="tooltip">Inbox Triage (T)</span>
       </button>
 
-      <button id="rail-drawer-btn" class="rail-btn" aria-label="Tabs Drawer (D)" title="Tabs Drawer (D)">
-        <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="9" y1="3" x2="9" y2="21"></line>
-        </svg>
-        <span class="rail-tooltip" role="tooltip">Open Tabs (D)</span>
-      </button>
-
-      <button id="rail-add-column-btn" class="rail-btn" aria-label="Add Column (C)" title="Add Column (C)">
-        <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        <span class="rail-tooltip" role="tooltip">New Column (C)</span>
-      </button>
-
-      <button id="rail-view-mode-btn" class="rail-btn" aria-label="Toggle View Mode (V)" title="Toggle View Mode (V)">
+      <button type="button" id="rail-view-mode-btn" class="rail-btn" aria-label="Toggle View Mode (V)" title="Toggle View Mode (V)">
         <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="8" y1="6" x2="21" y2="6"></line>
           <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -217,7 +211,7 @@
         <span class="rail-tooltip" role="tooltip">Bento Grid (V)</span>
       </button>
 
-      <button id="rail-theme-btn" class="rail-btn" aria-label="Toggle Theme" title="Toggle Theme">
+      <button type="button" id="rail-theme-btn" class="rail-btn" aria-label="Toggle Theme" title="Toggle Theme">
         <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10"></circle>
           <path d="M12 2a10 10 0 0 0 0 20z" fill="currentColor"></path>
@@ -225,7 +219,7 @@
         <span class="rail-tooltip" role="tooltip">Theme (Dark/Light)</span>
       </button>
 
-      <button id="rail-settings-btn" class="rail-btn" aria-label="Settings" title="Settings">
+      <button type="button" id="rail-settings-btn" class="rail-btn" aria-label="Settings" title="Settings">
         <svg class="rail-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -236,7 +230,7 @@
 
     <!-- Bottom Profile Section (Rainbow Profile Orb - Image 2) -->
     <div class="rail-section-bottom">
-      <button id="rail-profile-btn" class="rail-btn rail-profile-btn" aria-label="Profile & Atmosphere" title="Profile & Atmosphere">
+      <button type="button" id="rail-profile-btn" class="rail-btn rail-profile-btn" aria-label="Profile & Atmosphere" title="Profile & Atmosphere">
         <div class="rail-avatar-orb" aria-hidden="true"></div>
         <span class="rail-tooltip" role="tooltip">Profile & Atmosphere</span>
       </button>
@@ -245,119 +239,53 @@
 
   <!-- Main Viewport (Full 100% width with clean rail layout) -->
   <div class="main-viewport">
-    <!-- Top Floating Chrome Container (Dynamic Island & Controls) -->
-    <header id="top-chrome-container" class="top-chrome-container" aria-label="Top Chrome Navigation">
-      <!-- 1. Left Piece: Segmented Workspace Switcher with sliding pill thumb -->
-      <div id="top-bar-left" class="top-bar-piece glass">
-        <nav id="workspace-switcher" class="workspace-tabs segmented-control" role="tablist" aria-label="Workspaces">
-          <!-- Rendered dynamically with Home, Work, Projects, + -->
-        </nav>
+    <!-- Top Floating Chrome Container (Hero Atmosphere & Integrated Search Bar) -->
+    <header id="top-chrome-container" class="top-chrome-container" role="search" aria-label="Search Bookmarks and Tabs">
+      <div class="hero-atmosphere">
+        <div id="hero-date" class="hero-date">Tuesday, 12 March</div>
+        <h1 id="hero-clock" class="hero-clock">21:23</h1>
+        <div id="hero-weather-sub" class="hero-weather-sub"><span class="hero-weather-icon">⛅</span> <span class="hero-weather-text">24°C · Scattered Clouds</span></div>
       </div>
-
-      <!-- 2. Center Piece: Unified Morphing Dynamic Island (Image 1) -->
-      <div id="top-bar-center" class="top-bar-center-wrap">
-        <div id="dynamic-island" class="dynamic-island glass" role="region" aria-label="Dynamic Island">
-          <!-- Idle State: Time · Weather | Focus Badge | ⌘K Search Hint -->
-          <div class="island-idle">
-            <div class="island-time-weather">
-              <span class="live-pill-time">--:--</span>
-              <span class="live-pill-dot">•</span>
-              <button id="top-weather-chip" class="island-weather-chip top-chip" title="Weather (Click to change city)" aria-label="Weather">
-                <span class="weather-temp">65°</span>
-                <span class="weather-icon">☀️</span>
-              </button>
-            </div>
-            <div class="island-divider" aria-hidden="true"></div>
-            <button id="island-focus-badge" class="island-focus-badge" title="Focus Mode (Click to cycle)" aria-label="Focus Mode Status">
-              <span class="focus-dot dot-work"></span>
-              <span class="focus-label">WORK</span>
-            </button>
-            <div class="island-divider" aria-hidden="true"></div>
-            <button id="island-search-trigger" class="island-search-trigger" title="Search (⌘K)" aria-label="Search">
-              <svg class="island-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <span class="island-search-key">⌘K</span>
-            </button>
-          </div>
-
-          <!-- Expanded State: Full Search Input + Status Toggle -->
-          <div class="island-expanded" style="display: none;">
-            <svg class="island-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="island-search-input" class="island-search-input" placeholder="Search bookmarks, tabs, or web..." aria-label="Search bookmarks, tabs, or web" autocomplete="off" spellcheck="false">
-            <button id="island-focus-badge-mini" class="island-focus-badge mini" title="Focus Mode (Click to cycle)" aria-label="Focus Mode">
-              <span class="focus-dot dot-work"></span>
-              <span class="focus-label">WORK</span>
-            </button>
-            <button id="island-close-btn" class="island-close-btn" title="Close Search (Esc)" aria-label="Close Search">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Legacy Dynamic Live Pill Hidden Hook for Pomodoro Timers -->
-          <div id="dynamic-live-pill" style="display: none;" aria-hidden="true">
-            <span class="live-pill-time">--:--</span>
-            <span class="live-pill-date">---</span>
-            <div class="live-pill-active">
-              <svg class="live-pill-ring" width="24" height="24" viewBox="0 0 24 24"><circle class="live-ring-bg" cx="12" cy="12" r="9"/><circle class="live-ring-fill" cx="12" cy="12" r="9"/></svg>
-              <span class="live-pill-mode">FOCUS</span>
-              <span class="live-pill-digits">25:00</span>
-              <button id="live-pill-toggle-btn"></button>
-              <button id="live-pill-stop-btn"></button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Right Piece: Search button, Theme toggle, Palette switcher, Settings -->
-      <div id="top-bar-right" class="top-bar-piece glass">
-        <!-- Search Button (⌘K) -->
-        <button id="top-search-btn" class="top-chip top-search-chip" title="Search (⌘K)" aria-label="Search Bookmarks and Tabs">
-          <svg class="top-chip-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <span class="search-shortcut">⌘K</span>
-        </button>
-
-        <!-- Theme Toggle (Light / Dark) -->
-        <button id="top-theme-btn" class="top-icon-btn" title="Toggle Light / Dark Mode" aria-label="Toggle Theme">
-          <svg class="theme-icon-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-          <svg class="theme-icon-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;" aria-hidden="true">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        </button>
-
-        <!-- Curated Palette Picker Button -->
-        <button id="top-palette-btn" class="top-icon-btn palette-switcher-btn" title="Curated Pastel Themes (Lavender, Matcha, Sky, Coral)" aria-label="Curated Palettes">
-          <span class="palette-swatch-cluster" aria-hidden="true">
-            <span class="swatch-cluster-dot dot-lavender"></span>
-            <span class="swatch-cluster-dot dot-matcha"></span>
-            <span class="swatch-cluster-dot dot-sky"></span>
-            <span class="swatch-cluster-dot dot-coral"></span>
-          </span>
-        </button>
-
-        <!-- Settings / Menu Trigger -->
-        <button id="top-settings-btn" class="top-icon-btn" title="Settings & Menu" aria-label="Settings and Menu">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      <div class="top-search-wrap">
+        <svg class="top-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="top-search-input" class="top-search-input" role="searchbox" enterkeyhint="search" placeholder="Search bookmarks, tabs, or web..." aria-label="Search bookmarks, tabs, or web" autocomplete="off" spellcheck="false">
+        <span class="top-search-badge" aria-hidden="true">⌘K</span>
+        <button type="button" id="top-search-clear-btn" class="top-search-clear-btn" style="display: none;" title="Clear Search (Esc)" aria-label="Clear Search">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
     </header>
+
+    <!-- Quick Widgets Shelf (Clover Quick-Capture & Pebble Weather) -->
+    <div id="widget-shelf" class="widget-shelf" role="region" aria-label="Quick Widgets">
+      <!-- Clover Quick-Capture Cluster (Image 2) -->
+      <div id="clover-capture-widget" class="clover-widget" aria-label="Quick Capture">
+        <button type="button" id="clover-btn-task" class="clover-leaf leaf-top" title="New Task" aria-label="New Task">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </button>
+        <button type="button" id="clover-btn-drawer" class="clover-leaf leaf-left" title="Open Tabs Drawer" aria-label="Open Tabs Drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+        <button type="button" id="clover-btn-center" class="clover-center-btn" title="Quick Add Link" aria-label="Quick Add Link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button type="button" id="clover-btn-note" class="clover-leaf leaf-right" title="Quick Note" aria-label="Quick Note">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+        <button type="button" id="clover-btn-window" class="clover-leaf leaf-bottom" title="Save Window Session" aria-label="Save Window Session">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><circle cx="6" cy="6" r="1"/><circle cx="10" cy="6" r="1"/></svg>
+        </button>
+      </div>
+
+      <!-- Pebble Weather Widget (Image 1 & 3) -->
+      <button type="button" id="pebble-weather-widget" class="pebble-weather-blob" title="Weather (Click to change location)" aria-label="Current Weather">
+        <span class="pebble-temp">65°</span>
+        <span class="pebble-icon">☀️</span>
+      </button>
+    </div>
 
     <!-- Main Bento Board & Widget Cards Area -->
     <main id="board-container" class="board-container view-mode-bento" aria-label="Bento Board">
@@ -367,88 +295,6 @@
       <div class="column-skeleton"></div>
     </main>
   </div>
-
-  <!-- Floating Palette Popover (Attached to #top-palette-btn) -->
-  <div id="palette-picker-popover" class="palette-picker-popover glass" style="display: none;" role="menu" aria-label="Curated Palettes">
-    <div class="palette-popover-title">Curated Palettes</div>
-    <div class="palette-options-list">
-      <button class="palette-option-item" data-palette="lavender" role="menuitem">
-        <span class="palette-preview dot-lavender"></span>
-        <span class="palette-option-name">Lavender Iris</span>
-        <span class="palette-check-mark">✓</span>
-      </button>
-      <button class="palette-option-item" data-palette="matcha" role="menuitem">
-        <span class="palette-preview dot-matcha"></span>
-        <span class="palette-option-name">Matcha Green</span>
-        <span class="palette-check-mark">✓</span>
-      </button>
-      <button class="palette-option-item" data-palette="sky" role="menuitem">
-        <span class="palette-preview dot-sky"></span>
-        <span class="palette-option-name">Sky Dawn</span>
-        <span class="palette-check-mark">✓</span>
-      </button>
-      <button class="palette-option-item" data-palette="coral" role="menuitem">
-        <span class="palette-preview dot-coral"></span>
-        <span class="palette-option-name">Coral Blush</span>
-        <span class="palette-check-mark">✓</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Floating Bottom Dock (Phase 4: Step 12, Image 2 style) -->
-  <nav id="bottom-dock" class="bottom-dock glass" aria-label="Workspace & Quick Action Dock">
-    <!-- Workspaces with icons and active dots -->
-    <div id="dock-workspaces" class="dock-workspaces-group" role="tablist" aria-label="Workspaces">
-      <!-- Populated dynamically with workspace items -->
-    </div>
-
-    <!-- Elegant Dock Divider -->
-    <div class="dock-divider" aria-hidden="true"></div>
-
-    <!-- Action Buttons -->
-    <div class="dock-actions-group">
-      <button id="dock-add-bookmark-btn" class="dock-item" aria-label="Add Bookmark" title="Add Bookmark (+)">
-        <span class="dock-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </span>
-        <span class="dock-tooltip" role="tooltip">Add Bookmark</span>
-      </button>
-
-      <button id="dock-drawer-btn" class="dock-item" aria-label="Tabs Drawer" title="Tabs Drawer">
-        <span class="dock-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="9" y1="3" x2="9" y2="21"></line>
-          </svg>
-        </span>
-        <span class="dock-tooltip" role="tooltip">Tabs Drawer</span>
-      </button>
-
-      <button id="dock-wallpaper-btn" class="dock-item" aria-label="Wallpaper & Live Shaders Gallery" title="Wallpaper & Live Shaders Gallery">
-        <span class="dock-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
-        </span>
-        <span class="dock-tooltip" role="tooltip">Wallpapers & Shaders</span>
-      </button>
-
-      <button id="dock-add-column-btn" class="dock-item" aria-label="Quick Capture / Add Column" title="Quick Capture / Add Column">
-        <span class="dock-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="7" height="18" rx="1.5"></rect>
-            <rect x="14" y="3" width="7" height="18" rx="1.5"></rect>
-          </svg>
-        </span>
-        <span class="dock-tooltip" role="tooltip">Add Column</span>
-      </button>
-    </div>
-  </nav>
 
   <!-- Quick Floating Menu Modal / Popover -->
   <div id="quick-menu-popover" class="quick-menu-popover" style="display: none;" role="menu">
@@ -464,22 +310,6 @@
     <button class="quick-menu-item" id="menu-settings"><span class="menu-icon">⚙️</span> All Settings & Backups</button>
   </div>
 
-  <!-- Floating Action Buttons (Image 5 Bottom-Right Glass Orbs) -->
-  <aside class="floating-fab-container" aria-label="Floating Action Buttons">
-    <button id="floating-menu-btn" class="fab-circle" title="Quick Actions Menu" aria-label="Quick Actions Menu">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <line x1="4" y1="7" x2="20" y2="7"></line>
-        <line x1="4" y1="12" x2="20" y2="12"></line>
-        <line x1="4" y1="17" x2="20" y2="17"></line>
-      </svg>
-    </button>
-    <button id="floating-settings-btn" class="fab-circle" title="Settings" aria-label="Settings">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>
-    </button>
-  </aside>
 
   <!-- macOS Frosted Glass Context Menu -->
   <div id="macos-context-menu" class="macos-context-menu" style="display: none;" role="menu" aria-label="Context Menu"></div>
